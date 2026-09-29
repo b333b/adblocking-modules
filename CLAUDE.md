@@ -6,7 +6,7 @@ memory. Update it after any meaningful change. The repo is public, so keep
 personal data out of it.
 
 This repo merges the former `avito-adblocking-module`, `ozon-adblocking-module` and
-`yandex-adblocking-module` repos (now archived). Their CLAUDE.md files are combined below,
+`yandex-adblocking-module` repos (now permanently removed). Their CLAUDE.md files are combined below,
 one top-level section per app.
 
 ## Contents
