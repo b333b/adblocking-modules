@@ -1,5 +1,5 @@
-#!name=Ozon Bank — no banners
-#!desc=Removes the banner carousel and banner ads from the Ozon Bank main screen
+#!name=Ozon Bank — AdBlock
+#!desc=Removes banner carousel and ads
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
 [Script]
