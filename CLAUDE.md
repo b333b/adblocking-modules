@@ -42,7 +42,7 @@ App-specific notes: [Ozon](#ozon-privacy-rules), [Yandex Go captures](#go-captur
 ## Modules at a glance
 
 Install in Shadowrocket → Config → Modules → + → paste the module URL (HTTPS decryption on,
-Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as a link; add new modules there too. Raw base: `https://raw.githubusercontent.com/b333b/adblocking-modules/main/`
+Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as a link; add new modules there too. Install links use the form `https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/<Vendor>/<module>.sgmodule`
 
 | App | iOS bundle | Module | Script(s) | Script entries | MITM hosts |
 |---|---|---|---|---|---|
@@ -556,7 +556,7 @@ Shadowrocket module removing ads and annoyances from the Yandex Go iOS app (buil
 ### Go install
 
 Standalone: Shadowrocket → Config → Modules → + →
-`https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/yandex-go.sgmodule` (HTTPS decryption on, Shadowrocket CA trusted).
+`https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule` (HTTPS decryption on, Shadowrocket CA trusted).
 
 ### Go: what it removes
 
