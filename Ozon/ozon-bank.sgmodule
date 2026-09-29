@@ -1,0 +1,11 @@
+#!name=Ozon Bank — AdBlock
+#!desc=Removes banner carousel and banner ads. 
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+
+[Script]
+ozon-banners-page = type=http-response,pattern=^https://finance\.ozon\.ru/m/lk/main(\?.*)?$,requires-body=1,max-size=-1,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-bank.js
+ozon-banners-main = type=http-response,pattern=^https://finance\.ozon\.ru/apps/main/_mf/info/MFEMainMobile(\?.*)?$,requires-body=1,max-size=-1,timeout=10,argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER+NEW_PRODUCT_BUTTON,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-bank.js
+ozon-banners-list = type=http-response,pattern=^https://finance\.ozon\.ru/apps/promo/api/banners/list(\?.*)?$,requires-body=1,max-size=-1,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-bank.js
+[MITM]
+hostname = %APPEND% finance.ozon.ru

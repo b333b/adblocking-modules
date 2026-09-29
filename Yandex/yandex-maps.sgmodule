@@ -1,0 +1,65 @@
+#!name=Yandex Maps — AdBlock
+#!desc=Removes promo objects, ad pins, suggestions, search hints, showcase, Plus, and prompt/ad trackers. 
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+
+[Rule]
+# Not MITM'd, so blocked by domain
+DOMAIN-SUFFIX,appsflyersdk.com,REJECT
+DOMAIN-SUFFIX,mc.yandex.ru,REJECT
+DOMAIN,verify.yandex.ru,REJECT
+DOMAIN,report.appmetrica.yandex.net,REJECT
+
+[URL Rewrite]
+# First launch after install uses geointernal.mob.maps.yandex.net, later launches proxy.mob.maps.yandex.net.
+# Protobuf endpoints: reject-200 (empty body) = valid empty response.
+
+# Promo objects pinned to the screen + ad images
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/search/2\.x/banner/promo_object - reject-200
+^https?://avatars\.mds\.yandex\.net/get-geoadv-ext/ - reject-img
+
+# Ad pins on the map + ad event reporting
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/search/2\.x/poi/direct_ads - reject-200
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/search/2\.x/events/advert - reject-200
+
+# Personalized photo POIs on the map
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/layers/2\.x/personalized_poi_v3/ - reject-200
+
+# Chip row category lists: handled by the script (see CANARY at the top of the script)
+
+# Showcase feed: handled by the script (FEED_MODE at the top). A fully empty body (reject-200)
+# makes the sheet bounce on every map move.
+
+# GPS jamming/spoofing zones -> "Уточнить геолокацию"
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/coverage/2\.x/(locjam|locspoof) - reject-200
+
+# Audio ads in navigation (trigger polygons)
+^https?://mobile-maps-common\.s3\.yandex\.net/v1/audio_ads/ - reject
+
+# Yandex Plus
+^https?://egw\.home-gateway\.plus\.yandex\.net/ - reject-dict
+
+# Ad impression/click counters
+^https?://yandex\.ru/an/ - reject-200
+^https?://yandex\.ru/clck/ - reject-200
+
+[Header Rewrite]
+# Configs: ask for uncompressed bodies (so the script can edit the protobuf) and skip ETag caching
+# (otherwise the server answers 304 and the app keeps its old, unedited copy)
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/config/ header-del Accept-Encoding
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/v1/search/(discovery|categories) header-del Accept-Encoding
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/mapkit2/config/ header-del If-None-Match
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/(v2/startup|v1/config|v1/compliance_config)/ header-del If-None-Match
+^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/(v2/startup|v1/config|v1/compliance_config)/ header-del If-Modified-Since
+
+[Script]
+# Removes UI/ad experiment flags from the MapKit config: suggest_add_home ("Добавить дом"),
+# removing_search_bar ("Куда?" layout), ai_search_agent ("Спросить AI"), discovery_shutter_on_the_main_screen
+# (showcase + tabs), hints_in_search_bar_timeout, pin_user_location ("Уточнить геолокацию"), ad/promo flags
+yandex-maps = type=http-response,pattern=^https?://(proxy|geointernal)\.mob\.maps\.yandex\.net/(mapkit2/config/2\.x/|v1/search/discovery|v1/search/categories),requires-body=1,binary-body-mode=1,max-size=0,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-maps.js
+# Same script, JSON configs: startup (dock button, search hints, showcase tabs, fallback chips, promo banners,
+# profile Plus items), v1/config (fallback chips, chain ads), compliance flags, notifications, intro, tooltips, Fuel Plus widget
+yandex-maps-json = type=http-response,pattern=^https?://((proxy|geointernal)\.mob\.maps\.yandex\.net/(v2/startup/|v1/config/|v1/compliance_config/|v1/showcase/v3/search/(by_point/notifications|tooltips)|v1/discovery/search/intro)|app\.tanker\.yandex\.net/user/profile),requires-body=1,max-size=0,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-maps.js
+
+[MITM]
+hostname = %APPEND% proxy.mob.maps.yandex.net, geointernal.mob.maps.yandex.net, avatars.mds.yandex.net, yandex.ru, egw.home-gateway.plus.yandex.net, app.tanker.yandex.net, mobile-maps-common.s3.yandex.net

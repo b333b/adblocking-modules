@@ -1,0 +1,55 @@
+#!name=Yandex Go — AdBlock
+#!desc=Removes ads, banners, promo pop-ups/stories, map promo badges, and ad/analytics trackers.
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+
+[Rule]
+# Ad impression / click trackers
+DOMAIN,media-adv.market.yandex.ru,REJECT
+DOMAIN,em.market.ya.ru,REJECT
+DOMAIN,amc.yandex.ru,REJECT
+DOMAIN,adfstat.yandex.ru,REJECT
+DOMAIN,market-baobab.yandex.ru,REJECT
+# Yandex ad network / AdFox (Afisha ad slots and page branding) and anti-adblock loader
+DOMAIN,an.yandex.ru,REJECT
+DOMAIN-SUFFIX,adfox.ru,REJECT
+DOMAIN,static-mon.yandex.net,REJECT
+# Analytics (Metrica incl. counter subdomains and helpers)
+DOMAIN-SUFFIX,mc.yandex.ru,REJECT
+DOMAIN,mdd.yandex.net,REJECT
+DOMAIN,hdrc.yandex.net,REJECT
+DOMAIN,icmp0.ru,REJECT
+DOMAIN,csp.yandex.net,REJECT
+DOMAIN,report.appmetrica.yango.com,REJECT
+DOMAIN,log.strm.yandex.ru,REJECT
+DOMAIN-SUFFIX,app-analytics-services.com,REJECT
+
+[URL Rewrite]
+# Yandex ad network impression counters (rtbcount etc.)
+^https?:\/\/yandex\.ru\/an\/ - reject
+# Yandex ad network loader (context.js) used by Afisha and other web views
+^https?:\/\/yandex\.ru\/ads\/ - reject
+# Click/event logging (clck/redir, used for real link redirects, is left alone)
+^https?:\/\/yandex\.ru\/clck\/(click|jclck) - reject
+# Eats in-app marketing communications (pop-ups/stories); "{}" is a valid empty reply
+^https:\/\/tc\.eats\.yandex\.ru\/4\.0\/eda-superapp\/eats\/v1\/eats-communications\/v1\/communications - reject-dict
+# Scooters promo block ("{}" observed as the normal empty reply)
+^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/scooters\/v1\/promoblock - reject-dict
+
+[Script]
+yandexgo-layout = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/mlutp\/v1\/widgets\/layout\/,requires-body=1,max-size=-1,timeout=30,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-promotions = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/promotions\/v1\/(list|splash),requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-launch = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/3\.0\/launch,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-eats = type=http-response,pattern=^https:\/\/tc\.eats\.yandex\.ru\/4\.0\/eda-superapp\/eats\/v1\/layout-constructor\/v1\/layout,requires-body=1,max-size=-1,timeout=30,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-eats-bdui = type=http-response,pattern=^https:\/\/tc\.eats\.yandex\.ru\/4\.0\/eda-superapp\/eats\/v1\/bdui-mobile\/v1\/,requires-body=1,max-size=-1,timeout=30,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-lavka = type=http-response,pattern=^https:\/\/app\.lavka\.yandex\.net\/4\.0\/eda-superapp\/lavka\/v1\/api\/v1\/(upsale\/media-feed|informers),requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-products = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/mlutp\/v1\/products(\/screen\/|\?|$),requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-market-html = type=http-response,pattern=^https:\/\/go\.integration\.market\.yandex\.ru\/(?!api\/),requires-body=1,max-size=-1,timeout=30,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-market-wheel = type=http-response,pattern=^https:\/\/go\.integration\.market\.yandex\.ru\/api\/web\/.*FortuneWheelDailyRewards,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-bdui = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/(bdui\/v1\/|urbanads\/sdk),requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-inapp-comms = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/inapp-communications\/,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-dashboards = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/(cargo-c2c|intercity)\/v1\/dashboard\/content,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+yandexgo-finalsuggest = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/persuggest\/v1\/finalsuggest,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
+
+[MITM]
+hostname = %APPEND% tc.mobile.yandex.net, tc.eats.yandex.ru, app.lavka.yandex.net, go.integration.market.yandex.ru, yandex.ru
