@@ -9,11 +9,11 @@ HTTPS decryption must be on and the Shadowrocket CA certificate trusted (Setting
 
 | App | Module (raw link) | Removes |
 |---|---|---|
-| Avito | [avito.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Avito/avito.sgmodule) | Ads and promos in the home feed, search, favorites, item card and my listings; ad-tech and telemetry hosts |
-| Ozon Bank | [ozon-bank.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-bank.sgmodule) | Banner carousel, card offers ("Карта с выгодой", "Ozon Карта в корзине"), "Новый счёт или продукт", order-card prompts, promo sections of the "Выгода" screen |
-| Ozon Marketplace | [ozon-marketplace.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule) | Sponsored banners and videos, curtain pop-ups, prize-draw banners |
-| Yandex Maps | [yandex-maps.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule) | Promo objects, ad pins, showcase, search hints, Plus, audio ads in navigation, trackers |
-| Yandex Go | [yandex-go.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule) | Recommendation feed, splash and promo pop-ups, map badges, Market/Eats/Lavka ads, ad-network and analytics trackers |
+| Avito | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Avito/avito.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Avito/avito.sgmodule) | Ads and promos in the home feed, search, favorites, item card and my listings; ad-tech and telemetry hosts |
+| Ozon Bank | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-bank.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-bank.sgmodule) | Banner carousel, card offers ("Карта с выгодой", "Ozon Карта в корзине"), "Новый счёт или продукт", order-card prompts, promo sections of the "Выгода" screen |
+| Ozon Marketplace | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule) | Sponsored banners and videos, curtain pop-ups, prize-draw banners |
+| Yandex Maps | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule) | Promo objects, ad pins, showcase, search hints, Plus, audio ads in navigation, trackers |
+| Yandex Go | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule) | Recommendation feed, splash and promo pop-ups, map badges, Market/Eats/Lavka ads, ad-network and analytics trackers |
 
 After an update, refresh the module in Shadowrocket, then force-quit and relaunch the app.
 
