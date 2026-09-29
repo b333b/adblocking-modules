@@ -1,5 +1,5 @@
 #!name=Avito — AdBlock
-#!desc=Removes ads/promos (home feed, search, favorites, item card, my listings) and blocks ad-tech and telemetry hosts.
+#!desc=Removes ads/promos (home feed, search, favorites, item card, my listings), blocks ad-tech and telemetry hosts
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
 
