@@ -86,7 +86,11 @@ function emptyEncodedArrays(text, keys) {
 //     it on the client, so empty both copies and hide it with CSS.
 const MODULE_IDS = ['MFCardState%40ca-traffic', 'MFCardState@ca-traffic'];
 const HIDE_SELECTORS = [
+  '[data-testid="mfe-card-state"]',     // the whole ca-traffic card-state slot: card offer,
+                                        // "Ozon Карта в корзине", order-card prompts
   '[data-testid="order-plastic-v1"]',   // "Карта с выгодой…" with the "Заказать бесплатно" button
+  '[data-testid="plastic-in-cart"]',    // "Ozon Карта в корзине" variant of the same module
+  '[data-testid="banners-on-main"]',    // the main-screen banner carousel container
   '[data-testid="new-product-block"]',  // the "Новый счёт или продукт" card in the wallet row
   '[data-testid="priority-banner"]',    // promo cells in the "Выгода" screen sections
 ];

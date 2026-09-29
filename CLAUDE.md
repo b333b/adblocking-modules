@@ -214,8 +214,8 @@ Nothing here is a plain URL-REGEX rule list. Rules were tried first and abandone
 
 | Script | Loaded by | What it does |
 |---|---|---|
-| [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | **bank script** — carousel, card offer and promo sections; no logging, no stored state |
-| [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) | nothing by default (see [debug workflow](#ozon-bank-debug-workflow)) | **bank debug script** — capture pages, used when something breaks. Predates the current bank script: it does not know the `MFBonuses`, `api/mainPage`/`updateMainPage` routes or `MAIN_ACCOUNT_ACTIONS` |
+| [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | **bank script** — carousel, card offers and promo sections; no logging, no stored state (formerly `ozon-carousel.js`) |
+| [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) | nothing by default (see [debug workflow](#ozon-bank-debug-workflow)) | **bank debug script** — capture pages, used when something breaks. Predates the current bank script: it does not know the `MFBonuses`, `api/mainPage`/`updateMainPage` routes or the `mfe-card-state` / `plastic-in-cart` / `banners-on-main` CSS selectors |
 | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | **marketplace script** — drops ad widgets from composer pages |
 
 A stale raw link is the single most common cause of "my change did nothing": check the real
@@ -263,12 +263,13 @@ Key structures:
 
 | Block | Handled by |
 | --- | --- |
-| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + `banners`/`creatives` in the page data; widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays |
+| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + `banners`/`creatives` in the page data + CSS `[data-testid="banners-on-main"]` (the carousel container); widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays |
 | Banner in operations history | `MARKETING_LAST_OPERATIONS_BANNER` → `data: null` |
 | "Карта с выгодой…" / "Заказать бесплатно" | page: empty `MFCardState@ca-traffic` body in **both** copies + CSS `[data-testid="order-plastic-v1"]` |
+| "Ozon Карта в корзине" | same module: CSS `[data-testid="plastic-in-cart"]` |
 | "Новый счёт или продукт" next to the balance | `NEW_PRODUCT_BUTTON` → `data: null` |
 | "Новый счёт или продукт" card in the wallet row | CSS `[data-testid="new-product-block"]` |
-| Order-card section next to the cards | `MAIN_ACCOUNT_ACTIONS` → `data: null` (its `actionButton.type` is `ORDER_CARD`) |
+| Order-card prompts / the whole card-state slot | CSS `[data-testid="mfe-card-state"]` (the ca-traffic slot holding the card offer, "Ozon Карта в корзине" and order-card prompts). `MAIN_ACCOUNT_ACTIONS` (its `actionButton.type` is `ORDER_CARD`) is no longer nulled by default; see below |
 | "Выгода от партнёров", "Розыгрыши и акции" | `MFBonuses`: empty the promo collections above + CSS `[data-testid="priority-banner"]` |
 
 Rendered by the main module (which also carries the balance) → hide with CSS.
@@ -280,11 +281,13 @@ Module script entries: `ozon-banners-page` (`/m/lk/main`), `ozon-banners-main`
 `ozon-banners-list` (`banners/list`). Widget types are configured on the `ozon-banners-main` line, joined with `+`:
 
 ```
-argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER+NEW_PRODUCT_BUTTON+MAIN_ACCOUNT_ACTIONS
+argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER+NEW_PRODUCT_BUTTON
 ```
 
-`MAIN_ACCOUNT_ACTIONS` is named for actions in general. If Ozon ever puts something useful
-there, narrow the script to clear `actionButton` only when its `type` is `ORDER_CARD`.
+`MAIN_ACCOUNT_ACTIONS` was in this list before and has been dropped: the order-card section is
+now hidden with the `mfe-card-state` CSS instead. To null it again, append `+MAIN_ACCOUNT_ACTIONS`.
+It is named for actions in general; if Ozon ever puts something useful there, narrow the script
+to clear `actionButton` only when its `type` is `ORDER_CARD`.
 
 ### Ozon Bank debug workflow
 
