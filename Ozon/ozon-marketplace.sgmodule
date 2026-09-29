@@ -1,0 +1,8 @@
+#!name=Ozon Marketplace — no ads
+#!desc=Removes sponsored banners, video ads, curtain pop-ups and draw banners from Ozon app pages
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+[Script]
+ozon-mp-composer = type=http-response,pattern=^https://api\.ozon\.ru/api/composer-api\.bx/(page|widget)/json/v2,requires-body=1,max-size=-1,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-marketplace.js
+[MITM]
+hostname = %APPEND% api.ozon.ru

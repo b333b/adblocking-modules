@@ -11,15 +11,15 @@ one top-level section per app.
 
 ## Contents
 
-| Shared | [Avito](#avito) | [Ozon Bank](#ozon-bank) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
+| Shared | [Avito](#avito) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
 |---|---|---|---|---|
-| [Git](#git) | [App facts](#avito-app-facts) | [How the main screen is delivered](#ozon-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
-| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [What the blocks are](#ozon-what-the-blocks-are) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
-| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Script conventions](#ozon-script-conventions) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
-| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
-| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Debug workflow](#ozon-debug-workflow) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
-| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Testing](#ozon-testing) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
-| | | [Privacy (Ozon-specific)](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
+| [Git](#git) | [App facts](#avito-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
+| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
+| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
+| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
+| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Script conventions](#ozon-script-conventions) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
+| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
+| [README](README.md) | | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
 | | | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |
 
 ---
@@ -37,24 +37,26 @@ Never commit traffic captures (Shadowrocket .db logs, HAR files) or anything cop
 contain device IDs, UUIDs, coordinates, auth tokens and cookies. When quoting a request, strip the
 query string or replace values with placeholders. Keep example payloads synthetic.
 
-App-specific notes: [Ozon Bank](#ozon-privacy-rules), [Yandex Go captures](#go-captures).
+App-specific notes: [Ozon](#ozon-privacy-rules), [Yandex Go captures](#go-captures).
 
 ## Modules at a glance
 
 Install in Shadowrocket → Config → Modules → + → paste the module URL (HTTPS decryption on,
-Shadowrocket CA trusted). Raw base: `https://raw.githubusercontent.com/b333b/adblocking-modules/main/`
+Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as a link; add new modules there too. Raw base: `https://raw.githubusercontent.com/b333b/adblocking-modules/main/`
 
 | App | iOS bundle | Module | Script(s) | Script entries | MITM hosts |
 |---|---|---|---|---|---|
 | Avito | `online.anero.app` | [`Avito/avito.sgmodule`](Avito/avito.sgmodule) | [`Avito/Script/avito.js`](Avito/Script/avito.js) | `avito-ads` | `app.avito.ru`, `www.avito.ru`, `stats.avito.ru` |
-| Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug) | `ozon-banners-page`, `-main`, `-list` | `finance.ozon.ru` |
+| Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
+| Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
 | Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `app.lavka.yandex.net`, `go.integration.market.yandex.ru`, `yandex.ru` |
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
 | Avito | 230.1 | from scratch (not a fork) | working |
-| Ozon Bank | — | from scratch | working; Marketplace app not covered yet |
+| Ozon Bank | — | from scratch | working |
+| Ozon Marketplace | — | from scratch | new |
 | Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Go | 4.19 (September 2026) | from scratch | working, see [open items](#go-open-items) |
 
@@ -62,11 +64,14 @@ Shadowrocket CA trusted). Raw base: `https://raw.githubusercontent.com/b333b/adb
 
 ```
 CLAUDE.md                          this file
+README.md                          install links (raw .sgmodule URLs) for every module
 Avito/avito.sgmodule               Avito module
 Avito/Script/avito.js              Avito response script
 Ozon/ozon-bank.sgmodule            Ozon Bank module, loads the clean script
+Ozon/ozon-marketplace.sgmodule     Ozon Marketplace module
 Ozon/Script/ozon-bank.js           Ozon Bank clean script
 Ozon/Script/ozon-bank-debug.js     Ozon Bank debug script
+Ozon/Script/ozon-marketplace.js    Ozon Marketplace script
 Yandex/yandex-maps.sgmodule        Yandex Maps module
 Yandex/yandex-go.sgmodule          Yandex Go module
 Yandex/Script/yandex-maps.js       Yandex Maps script (protobuf + JSON)
@@ -78,8 +83,9 @@ Yandex/Script/yandex-go.js         Yandex Go script
 - Module `script-path` values use the raw URL on `main`:
   `https://raw.githubusercontent.com/b333b/adblocking-modules/main/<Vendor>/Script/<file>.js`
 - Every module's `#!homepage` is `https://github.com/b333b/adblocking-modules`.
-- New apps are added the same way (e.g. an Ozon Marketplace module would be
-  `Ozon/ozon-marketplace.sgmodule` + `Ozon/Script/ozon-marketplace.js`).
+- Module files use the `.sgmodule` extension (rename `.module` uploads).
+- New apps are added the same way (e.g. `Ozon/ozon-marketplace.sgmodule` + `Ozon/Script/ozon-marketplace.js`),
+  plus a line in [README.md](README.md) and in [Modules at a glance](#modules-at-a-glance).
 - Check the actual paths in the repo before writing a module line; they have moved before
   (most recently in the merge into this repo).
 
@@ -101,7 +107,7 @@ Facts that apply to every module.
 - Shadowrocket caches scripts fetched by URL: after pushing a script change, refresh the
   module/script in Shadowrocket before testing.
 - `$notification.post` does nothing in Shadowrocket. Report through a page instead (see
-  [Ozon debug workflow](#ozon-debug-workflow)).
+  [Ozon Bank debug workflow](#ozon-bank-debug-workflow)).
 - Scripts can't decompress. Modules force `Accept-Encoding: gzip` (Avito) or delete
   `Accept-Encoding` (Yandex Maps) on scripted endpoints; bodies that still arrive compressed are passed through.
 - `[Body Rewrite] http-response-jq` did not visibly apply to a large (~470 KB) JSON body in
@@ -194,107 +200,97 @@ Candidates if more cleanup is wanted on the item card: `fmpOffer`, `fmpCalculato
 
 ---
 
-## Ozon Bank
+## Ozon
 
-Shadowrocket module and response scripts that remove promotional blocks from Ozon's iOS apps.
-Only the **Bank** app is covered; the **Marketplace** app has no module yet.
+Shadowrocket modules and response scripts that remove promotional content from two Ozon iOS apps:
 
-The **Ozon Bank iOS app** (`ru.ozon.fintech.finance`) main screen is a WebView
-loading `finance.ozon.ru`, so its content can be edited in flight with an HTTPS
-response script.
+- **Ozon Bank** (`ru.ozon.fintech.finance`) — main screen and "Выгода" screen are a WebView
+  on `finance.ozon.ru`, so their content can be edited in flight.
+- **Ozon Marketplace** — native app whose screens are assembled from composer responses on
+  `api.ozon.ru`, so ad widgets can be dropped from the layout before the app sees them.
 
-Nothing here is a Shadowrocket URL-REGEX rule list. Plain `REJECT` rules were tried
-first and abandoned; see [Why rules were not enough](#ozon-why-rules-were-not-enough).
+Nothing here is a plain URL-REGEX rule list. Rules were tried first and abandoned; see
+[Why rules were not enough](#ozon-why-rules-were-not-enough).
 
-Files:
-- [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) — Bank module, loads the clean script
-- [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) — **the clean script**: only what is needed to hide
-  the blocks, no logging, no stored state
-- [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) — **the debug script**: the clean behaviour plus capture
-  pages, used when something breaks or when Ozon changes the page
+| Script | Loaded by | What it does |
+|---|---|---|
+| [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | **bank script** — carousel, card offer and promo sections; no logging, no stored state |
+| [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) | nothing by default (see [debug workflow](#ozon-bank-debug-workflow)) | **bank debug script** — capture pages, used when something breaks. Predates the current bank script: it does not know the `MFBonuses`, `api/mainPage`/`updateMainPage` routes or `MAIN_ACCOUNT_ACTIONS` |
+| [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | **marketplace script** — drops ad widgets from composer pages |
 
-### Ozon: how the app delivers the main screen
+A stale raw link is the single most common cause of "my change did nothing": check the real
+paths before writing a module line.
 
-Understanding this is most of the work; the fixes are trivial once the source is known.
+### Ozon Bank: how the app delivers the main screen
 
 | What | Where it comes from |
 | --- | --- |
-| Page shell **and server-rendered markup for every module** | `GET finance.ozon.ru/m/lk/main` (~600 KB HTML) |
-| Main-screen widget tree | `GET /apps/main/_mf/info/MFEMainMobile` (JSON) |
-| Same widget tree, on in-app navigation back to main | `GET /apps/main/api/mainPage` |
+| Page shell **and server-rendered markup for every module** | `GET /m/lk/main` (~600 KB HTML) |
+| Widget tree at load | `GET /apps/main/_mf/info/MFEMainMobile` |
+| Widget tree on in-app navigation back to main | `POST /apps/main/api/mainPage` |
 | Partial refresh (account block) | `POST /apps/main/api/updateMainPage` |
 | Promo banner query (GraphQL-shaped) | `/apps/promo/api/banners/list` → `data.bannersV2.getHighestPriorityBanners.banners` |
-| Card-offer module data | `/apps/ca-traffic/api/{cardDeliveryWidget,issue/getCompletedIssues,loyalty/loyaltyState}` |
-| Banner images | `cdn1.ozone.ru/s3/ob-banner-manager/...` |
-| Module JS/CSS chunks | `cdn2.ozone.ru/s3/bozon-fe-<app>/...` |
+| "Выгода" screen data | `GET /apps/loyalty/_mf/info/MFBonuses` → `ctx.frontendFacade.<Operation>` |
+| Card-offer module data | `/apps/ca-traffic/api/{bannerV2,cardDeliveryWidget,frk/widget,loyalty/loyaltyState}` |
+| Banner images | `cdn1.ozone.ru/s3/ob-banner-manager/…` |
+| Module JS/CSS chunks | `cdn2.ozone.ru/s3/bozon-fe-<app>/…` |
+
+The same widget can arrive filled in one response and empty in another: `MAIN_ACCOUNT_ACTIONS`
+carried `{loyaltyType: "STARS", type: "ORDER_CARD"}` in `api/mainPage` while `MFEMainMobile`
+had nulls. Check every endpoint before concluding a block has no data source.
 
 Key structures:
 
 - The page embeds each microfrontend's rendered HTML under
-  `pageContext.__widget_data__["<MFName>@<app>"].data.body`, **percent-encoded, and the
-  whole blob appears twice in the page** (an encoded copy and a plain copy). Missing the
-  second copy looks like "the fix does nothing".
-- The widget tree is a list of objects `{ id, type, status, version, data, error, widgets }`.
-  Widget types seen so far: `USER_HEADER`, `MAIN_ACCOUNT`, `MAIN_ACCOUNT_CARDS`,
-  `QUICK_ACTIONS`, `CREDIT_ACCOUNT_CARDS`, `TRUSTED_PERSONS_BANNERS`, `LAST_OPERATIONS`,
+  `pageContext.__widget_data__["<MFName>@<app>"].data.body`, **percent-encoded, and the whole
+  blob appears twice in the page** (an encoded copy and a plain copy). Missing the second copy
+  looks like "the fix does nothing".
+- The widget tree is a list of `{ id, type, status, version, data, error, widgets }`. Types seen:
+  `USER_HEADER`, `MAIN_ACCOUNT`, `MAIN_ACCOUNT_CARDS`, `MAIN_ACCOUNT_ACTIONS`, `QUICK_ACTIONS`,
+  `CREDIT_ACCOUNT_CARDS`, `TRUSTED_PERSONS_BANNERS`, `LAST_OPERATIONS`, `ORDER_CARD`,
   `MARKETING_BANNER_SLIDER`, `MARKETING_LAST_OPERATIONS_BANNER`, `NEW_PRODUCT_BUTTON`.
-- `data: null` with `status: "READY"` is the app's own "nothing to show" state
-  (`CREDIT_ACCOUNT_CARDS` ships that way when the user has no such product), which is why
+- `data: null` with `status: "READY"` is the app's own "nothing to show" state, which is why
   nulling a widget's `data` is safe, while a missing widget or a 404 is not.
-- Each banner's content sits in a `config` **JSON string** inside the creative:
+- Each banner's content sits in a `config` **JSON string**:
   `{ id, link, image, imageDark, title, description, buttonText, buttonTheme, hasClose }`.
+- On the "Выгода" screen the promo collections live in `ctx.frontendFacade`:
+  `GetBannersList` → `getHighestPriorityBanners`, `GetCashbackProgram` → `promotionCellBanners`,
+  `GetLoyaltyPromotionFilter` → `getPromotionFiltersV2`, `GetFRKBonusStateV2` →
+  `activeLotteries` / `availableLotteries`. Everything else in that payload (cashback balance,
+  monthly categories, stars, profile) must be left alone.
 
-### Ozon: what the blocks are
+### Ozon Bank: what is removed and how
 
 | Block | Handled by |
 | --- | --- |
-| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + the `banners`/`creatives` lists in the page data; widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays |
-| Banner in operations history | widget tree: `MARKETING_LAST_OPERATIONS_BANNER` → `data: null` |
-| "Карта с выгодой…" / "Заказать бесплатно" | page: empty the `MFCardState@ca-traffic` body in **both** copies + CSS `[data-testid="order-plastic-v1"]` |
-| "Новый счёт или продукт" next to the balance | widget tree: `NEW_PRODUCT_BUTTON` → `data: null` |
+| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + `banners`/`creatives` in the page data; widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays |
+| Banner in operations history | `MARKETING_LAST_OPERATIONS_BANNER` → `data: null` |
+| "Карта с выгодой…" / "Заказать бесплатно" | page: empty `MFCardState@ca-traffic` body in **both** copies + CSS `[data-testid="order-plastic-v1"]` |
+| "Новый счёт или продукт" next to the balance | `NEW_PRODUCT_BUTTON` → `data: null` |
 | "Новый счёт или продукт" card in the wallet row | CSS `[data-testid="new-product-block"]` |
+| Order-card section next to the cards | `MAIN_ACCOUNT_ACTIONS` → `data: null` (its `actionButton.type` is `ORDER_CARD`) |
+| "Выгода от партнёров", "Розыгрыши и акции" | `MFBonuses`: empty the promo collections above + CSS `[data-testid="priority-banner"]` |
 
 Rendered by the main module (which also carries the balance) → hide with CSS.
 Rendered by a module of its own → empty that module's body.
+Delivered as widget data → null the widget.
 
-### Ozon script conventions
+Module script entries: `ozon-banners-page` (`/m/lk/main`), `ozon-banners-main`
+(`MFEMainMobile`, `api/mainPage`, `api/updateMainPage`), `ozon-banners-loyalty` (`MFBonuses`),
+`ozon-banners-list` (`banners/list`). Widget types are configured on the `ozon-banners-main` line, joined with `+`:
 
-- One script file handles every pattern; it branches on `$request.url`.
-- **Settings live in the module line, never in the file**: `argument=` carries a `+`-joined
-  list of widget types plus `key:value` tokens. Editing JS on a phone introduces curly
-  quotes and breaks the script silently.
-- Always strip `Cache-Control`, `ETag`, `Expires`, `Last-Modified`, `Age`, `Pragma` and
-  `Content-Length`, then send `Cache-Control: no-store, no-cache, must-revalidate`.
-  Without this the app reuses a stored copy and every test result is meaningless.
-- Return the original body untouched when nothing matched. Never fail closed.
-- Edit surgically: null one field, empty one array, empty one module body. Never rewrite
-  or reorder a response, and never touch account, card, balance, auth or transfer data.
-- Text edits on the page must handle both the percent-encoded form (`%22`, `%5C`, `%5B`)
-  and the plain form, count brackets, and respect escapes.
-- `$notification.post` does nothing in Shadowrocket. Report through a page instead:
-  the debug script serves `http(s)://finance.ozon.ru/__dump*` from an `http-request`
-  script and keeps state in `$persistentStore`.
+```
+argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER+NEW_PRODUCT_BUTTON+MAIN_ACCOUNT_ACTIONS
+```
 
-### Ozon: why rules were not enough
+`MAIN_ACCOUNT_ACTIONS` is named for actions in general. If Ozon ever puts something useful
+there, narrow the script to clear `actionButton` only when its `type` is `ORDER_CARD`.
 
-- A URL-REGEX `REJECT` returns **404**, and a missing microfrontend is fatal: rejecting
-  `/apps/promo/_mf/context` put the main screen in a reload loop (4 retries → 4 error
-  reports to `/e` → full reload).
-- `REJECT-DICT` answers with a bare `{}`, which does not match a GraphQL-shaped response,
-  so the client treats it as an error and falls back to what it already had.
-- Blocking `api/v4/{creditCard,installment,consumerCredit,autoCredit}/widget`,
-  `/mobile/obank/features` or `creditProductsV5` breaks real functionality.
-- Shadowrocket policies: see [Shadowrocket reference](#shadowrocket-reference).
-
-Rules are still fine for telemetry (`metrixa`, `load-metrics`, `logs-shredder`,
-`logs-gateway`, `dlte`, `perf-metrics-collector`, `sentry.ozon.ru`,
-`DOMAIN-SUFFIX,appsflyersdk.com`).
-
-### Ozon debug workflow
+### Ozon Bank debug workflow
 
 1. Point the module's `script-path` at `Ozon/Script/ozon-bank-debug.js`, and add an
-   `http-request` line for `^https?://finance\.ozon\.ru/__dump` using the same script
-   so the capture pages are served. Keep only one module matching a given URL —
+   `http-request` line for `^https?://finance\.ozon\.ru/__dump` using the same script so the
+   capture pages are served. Keep only one module matching a given URL —
    **Shadowrocket runs one script per request**, and a leftover module wins silently.
 2. Launch the app, then open the pages in Safari (pull to refresh; Safari caches them):
 
@@ -306,34 +302,102 @@ Rules are still fine for telemetry (`metrixa`, `load-metrics`, `logs-shredder`,
    | `/__dump/raw` | the response as-is |
 3. Compare the newest entry's timestamp with the launch. Older means nothing was fetched.
 
+The debug script lags behind the bank script (see the table above); while debugging, the
+"Выгода" screen and in-app navigation back to main are not cleaned.
+
+### Ozon Marketplace
+
+Every screen is built from `api.ozon.ru/api/composer-api.bx/page/json/v2`
+(and `widget/json/v2`):
+
+```
+{ layout: [ { component, name, stateId, vertical, placeholders: [ { widgets: [...] } ] } ],
+  widgetStates: { "<stateId>": "<json string>" },
+  pageInfo, pageToken, userToken, requestID, shared, browser }
+```
+
+The script (module entry `ozon-mp-composer`) drops ad widgets from `layout`, at top level or
+nested inside another widget's `placeholders`, and deletes their `widgetStates` entries. Defaults:
+
+| Component | What it is |
+| --- | --- |
+| `advBanner`, `advVideoBannerMobile` | `rtb.*` sponsored banner and video |
+| `advRefreshWithDelay` | `rtb.*` timer that reloads the page for fresh ads |
+| `adBanner` | `skeeter.*` bank and product banners |
+| `entryBannerWidget` | `regulardraw.*` prize-draw entry banner |
+| `curtain` | pop-up curtain banners |
+
+Any widget whose `name` starts with `rtb.` is dropped whatever its component is.
+`argument=` overrides the component list.
+
+Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
+`userMarketingActionsSelector`, and sponsored products inside product grids.
+
+`_action/v2/setBannerAction`, `_action/v2/regulardraw/markLkBannerAsSeen` and the
+`xapi.ozon.ru` logging endpoints are pure tracking and can be handled with plain rules
+(not in the module yet).
+
+### Ozon script conventions
+
+- One script file per app handles every pattern; it branches on `$request.url`.
+- **Settings live in the module line, never in the file.** Editing JS on a phone introduces
+  curly quotes and breaks the script silently.
+- For the bank, always strip `Cache-Control`, `ETag`, `Expires`, `Last-Modified`, `Age`,
+  `Pragma` and `Content-Length`, then send `Cache-Control: no-store, no-cache, must-revalidate`.
+  Without this the app reuses a stored copy and every test result is meaningless.
+- Return the original body untouched when nothing matched. Never fail closed.
+- Edit surgically: null one field, empty one array, empty one module body, drop one widget.
+  Never rewrite or reorder a response, and never touch account, card, balance, auth, cart,
+  order or transfer data.
+- Text edits on the page must handle both the percent-encoded form (`%22`, `%5C`, `%5B`) and
+  the plain form, count brackets, and respect escapes.
+- `$notification.post` does nothing in Shadowrocket. Report through a page instead.
+
+### Ozon: why rules were not enough
+
+- A URL-REGEX `REJECT` returns **404**, and a missing microfrontend is fatal: rejecting
+  `/apps/promo/_mf/context` put the main screen in a reload loop (4 retries → 4 error reports
+  to `/e` → full reload).
+- `REJECT-DICT` answers with a bare `{}`, which does not match a GraphQL-shaped response, so
+  the client treats it as an error and falls back to what it already had.
+- Blocking `api/v4/{creditCard,installment,consumerCredit,autoCredit}/widget`,
+  `/mobile/obank/features` or `creditProductsV5` breaks real functionality.
+- Shadowrocket policies: see [Shadowrocket reference](#shadowrocket-reference).
+
+Rules are still right for telemetry: `metrixa`, `load-metrics`, `logs-shredder`,
+`logs-gateway`, `dlte`, `perf-metrics-collector`, `sentry.ozon.ru`,
+`DOMAIN-SUFFIX,appsflyersdk.com`.
+
 ### Ozon testing
 
-Run scripts under Node before committing. There is no framework; a throwaway harness that
-defines `$request`, `$response`, `$argument`, `$done` and `$persistentStore` and `eval`s
-the file is enough. Every change should be checked against a body shaped like the real one
-(rebuild it from a dump outline), asserting both that the target is gone **and** that the
-account widget, balance, other modules and chunk lists are byte-identical.
+Run scripts under Node before committing. No framework: a throwaway harness defining
+`$request`, `$response`, `$argument`, `$done` and `$persistentStore` that `eval`s the file is
+enough. Test against bodies shaped like the real ones (rebuilt from a dump outline or a HAR
+export kept outside the repo), asserting both that the target is gone **and** that everything
+else is byte-identical — for the bank the account widget, balance and other modules; for the
+marketplace the remaining layout, `widgetStates`, paging tokens and page info.
 
 ### Ozon privacy rules
 
 The app's responses are not public.
 
-- **Never commit dumps, logs, `.db` proxy exports, HAR files or screenshots of them.**
+- **Never commit dumps, HAR files, `.db` proxy exports, logs or screenshots of them.**
   `/__dump/raw` and `/__dump/find` are unfiltered and contain name, email, phone, Ozon id,
-  session id and internal card ids. `/__dump/full` masks strings but can still leak ids.
-- Keep example payloads synthetic. Use placeholder ids, never real ones.
-- Do not commit account-specific selectors or values if they ever turn out to be per-user.
+  session id and internal card ids. HAR captures hold the same plus balances and card data.
+- Keep example payloads synthetic, with placeholder ids.
+- The debug script stores captured responses in Shadowrocket's script storage and serves them
+  over unauthenticated `__dump` pages. Say so in its header and in the README.
 
 ### Ozon: when a block comes back
 
-1. Debug module on, one launch, read `/__dump`. The `widgets:` line names every widget
-   type in the response, and `changes:` says what was applied.
+1. Debug module on, one launch, read `/__dump`. The `widgets:` line names every widget type in
+   the response, and `changes:` says what was applied.
 2. If the entry is missing, the request never happened: caching, or another module ran.
-3. If the block is visible while the response was modified, it has a second source.
-   Check, in order: the rendered body in the page, the page's embedded data, a fetch by
-   the module itself, and in-app navigation (`api/mainPage` was found exactly this way).
-4. Prefer, in order: null the widget `data`, empty the list in place keeping the wrapper,
-   empty the module's rendered body, hide with CSS by `data-testid`.
+3. If the block is visible while the response was modified, it has a second source. Check, in
+   order: the rendered body in the page, the page's embedded data, a fetch by the module
+   itself, and in-app navigation (`api/mainPage` was found exactly this way).
+4. Prefer, in order: null the widget `data`, empty the list in place keeping the wrapper, empty
+   the module's rendered body, hide with CSS by `data-testid`.
 5. Judge over two launches, and for navigation bugs also leave the screen and come back.
 
 ---

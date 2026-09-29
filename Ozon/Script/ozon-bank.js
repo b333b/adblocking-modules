@@ -3,6 +3,7 @@
 //   1. /m/lk/main                          the rendered banner markup and the banner data in the page
 //   2. apps/main/_mf/info/MFEMainMobile    the banner widgets in the main-screen data
 //   3. apps/promo/api/banners/list         the banner query
+//   4. apps/loyalty/_mf/info/MFBonuses     the promo collections of the "Выгода" screen
 // Caching headers are stripped so the changes apply on every launch.
 // Widget types come from the module argument, joined with +:
 //   argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER
@@ -87,6 +88,7 @@ const MODULE_IDS = ['MFCardState%40ca-traffic', 'MFCardState@ca-traffic'];
 const HIDE_SELECTORS = [
   '[data-testid="order-plastic-v1"]',   // "Карта с выгодой…" with the "Заказать бесплатно" button
   '[data-testid="new-product-block"]',  // the "Новый счёт или продукт" card in the wallet row
+  '[data-testid="priority-banner"]',    // promo cells in the "Выгода" screen sections
 ];
 
 function emptyModuleBodies(text) {
@@ -128,6 +130,31 @@ function injectHidingCss(text) {
   return text;
 }
 
+// 1d. The "Выгода" screen (loyalty module): its data ships inside the MFBonuses payload under
+//     ctx.frontendFacade. Empty only the promo collections, leaving cashback balance,
+//     monthly categories and the rest of the screen alone.
+const LOYALTY_KEYS = [
+  'getHighestPriorityBanners',  // GetBannersList — partner/promo banner cells
+  'promotionCellBanners',       // GetCashbackProgram — promo cells
+  'getPromotionFiltersV2',      // GetLoyaltyPromotionFilter — "Выгода от партнёров" categories
+  'activeLotteries',            // GetFRKBonusStateV2 — "Розыгрыши и акции"
+  'availableLotteries',
+];
+
+function emptyArraysUnder(node, keys, inside) {
+  if (Array.isArray(node)) {
+    if (inside) { node.length = 0; return; }
+    node.forEach((v) => emptyArraysUnder(v, keys, false));
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  for (const k of Object.keys(node)) {
+    const hit = inside || keys.indexOf(k) >= 0;
+    if (hit && Array.isArray(node[k])) node[k] = [];
+    else emptyArraysUnder(node[k], keys, hit);
+  }
+}
+
 // 2. Main-screen data: the listed widget types arrive with no data, the state the app uses for empty widgets.
 function hideWidgets(node) {
   if (Array.isArray(node)) { node.forEach(hideWidgets); return; }
@@ -155,6 +182,7 @@ try { data = JSON.parse(body); } catch (e) {}
 let out = body;
 if (data && typeof data === 'object') {
   if (/banners\/list/.test(url)) emptyBannerLists(data);
+  else if (/apps\/loyalty\/_mf\/info\//.test(url)) emptyArraysUnder(data, LOYALTY_KEYS, false);
   else hideWidgets(data);
   out = JSON.stringify(data);
 } else if (/\/m\/lk\//.test(url) && body) {
