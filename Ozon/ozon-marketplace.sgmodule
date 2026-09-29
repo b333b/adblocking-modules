@@ -1,5 +1,5 @@
-#!name=Ozon Marketplace — no ads
-#!desc=Removes sponsored banners, video ads, curtain pop-ups and draw banners from Ozon app pages
+#!name=Ozon Marketplace — AdBlock
+#!desc=Removes sponsored banners, video ads, curtain pop-ups, and draw banners
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
 [Script]
