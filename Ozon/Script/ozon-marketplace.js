@@ -8,17 +8,13 @@
 // Ad tiles inside result grids (banners labelled "Реклама", sponsored products) are
 // removed from the widget state as well.
 //
-// Module argument, joined with +:
-//   component names        override the widget list
-//   tiles:keep             leave result grids untouched
-//   sponsored:keep         keep sponsored products, still drop ad banners in grids
+// Settings are declared by the module; see the header below.
 const DEFAULT_COMPONENTS = [
   'advBanner',              // rtb.advBanner — sponsored banner
   'advVideoBannerMobile',   // rtb.advVideoBannerMobile — sponsored video
   'advRefreshWithDelay',    // rtb.* — reloads the page to serve fresh ads
   'adBanner',               // skeeter.* — bank/product banners
   'entryBannerWidget',      // regulardraw.* — prize draw entry banner
-  'curtain',                // pop-up curtain banners
 ];
 // Widgets whose name starts with one of these are dropped whatever the component is.
 const DROP_NAME_PREFIXES = ['rtb.'];
@@ -27,12 +23,25 @@ const DROP_NAME_PREFIXES = ['rtb.'];
 // (their add-to-cart action carries an `advert` token). widgetStates values are JSON strings.
 const AD_BADGE = /^реклама$/i;
 
+// Settings come from the module's #!arguments as a JSON object, e.g.
+//   argument={"ad_widgets":true,"curtains":true,"grid_ad_banners":true,"sponsored_products":true,"extra":""}
+// A legacy "+"-joined list of component names still works.
 const arg = typeof $argument !== 'undefined' ? String($argument) : '';
-const fromArg = arg.split('+').map((t) => t.trim()).filter((t) => /^[A-Za-z][A-Za-z0-9_]*$/.test(t));
-const COMPONENTS = fromArg.length ? fromArg : DEFAULT_COMPONENTS;
-const tokens = arg.split('+').map((t) => t.trim().toLowerCase());
-const KEEP_TILES = tokens.indexOf('tiles:keep') >= 0;        // leave result grids alone
-const KEEP_SPONSORED = tokens.indexOf('sponsored:keep') >= 0; // keep sponsored products, drop ad banners
+let S = null;
+try { S = JSON.parse(arg); } catch (e) {}
+const legacy = S ? [] : arg.split('+').map((t) => t.trim()).filter((t) => /^[A-Za-z][A-Za-z0-9_]*$/.test(t));
+const on = (k) => (S ? S[k] !== false && S[k] !== 'false' && S[k] !== 0 : true);
+
+const COMPONENTS = legacy.length ? legacy : [];
+if (!legacy.length) {
+  if (on('ad_widgets')) COMPONENTS.push.apply(COMPONENTS, DEFAULT_COMPONENTS);
+  if (on('curtains')) COMPONENTS.push('curtain');
+  const extra = S && typeof S.extra === 'string' ? S.extra : '';
+  extra.split(/[+,\s]+/).filter((t) => /^[A-Za-z][A-Za-z0-9_]*$/.test(t)).forEach((t) => COMPONENTS.push(t));
+}
+const KEEP_TILES = !(on('grid_ad_banners') || on('sponsored_products'));
+const KEEP_SPONSORED = !on('sponsored_products');
+const KEEP_GRID_BANNERS = !on('grid_ad_banners');
 
 const removed = [];
 const isAd = (w) =>
@@ -61,7 +70,7 @@ const hasAdvert = (node, depth) => {
 
 const isAdTile = (t) => {
   if (!t || typeof t !== 'object') return false;
-  if (t.type === 'banner' && t.banner) {
+  if (!KEEP_GRID_BANNERS && t.type === 'banner' && t.banner) {
     const b = t.banner.badges;
     if (Array.isArray(b) && b.some((x) => x && typeof x.text === 'string' && AD_BADGE.test(x.text.trim()))) return true;
   }

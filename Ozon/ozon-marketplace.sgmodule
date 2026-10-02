@@ -1,8 +1,10 @@
 #!name=Ozon Marketplace — AdBlock
-#!desc=Removes sponsored banners, video ads, curtain pop-ups, draw banners, and ad tiles and sponsored products in search results
+#!desc=Removes sponsored banners, video ads, curtain pop-ups and ads inside search results
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
+#!arguments=ad_widgets:true,curtains:true,grid_ad_banners:true,sponsored_products:true,extra:
+#!arguments-desc=Each setting is true or false, except extra.\n\nad_widgets — sponsored banners, video ads, prize-draw banners, ad auto-refresh\ncurtains — pop-up curtain banners\ngrid_ad_banners — banner tiles labelled "Реклама" inside result grids\nsponsored_products — sponsored product tiles in search results\nextra — extra widget component names to drop, comma separated (leave empty for none)
 [Script]
-ozon-mp-composer = type=http-response,pattern=^https://api\.ozon\.ru/api/composer-api\.bx/(page|widget)/json/v2,requires-body=1,max-size=-1,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-marketplace.js
+ozon-mp-composer = type=http-response,pattern=^https://api\.ozon\.ru/api/composer-api\.bx/(page|widget)/json/v2,requires-body=1,max-size=-1,timeout=10,argument={"ad_widgets":{{{ad_widgets}}},"curtains":{{{curtains}}},"grid_ad_banners":{{{grid_ad_banners}}},"sponsored_products":{{{sponsored_products}}},"extra":"{{{extra}}}"},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-marketplace.js
 [MITM]
 hostname = %APPEND% api.ozon.ru

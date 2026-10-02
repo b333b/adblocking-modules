@@ -19,6 +19,7 @@ After an update, refresh the module in Shadowrocket, then force-quit and relaunc
 
 ## Notes
 
+- Ozon Marketplace has on/off switches (ad widgets, curtains, ad tiles and sponsored products in search) in the module's settings in Shadowrocket. All are on by default.
 - Rules and rewrites apply to all traffic while a module is on, not only to its app. The Yandex Maps
   module blocks all `yandex.ru/clck/` links, including the redirect links the Yandex Go module leaves working.
 - `Ozon/Script/ozon-bank-debug.js` is for troubleshooting only and is not loaded by any module. When

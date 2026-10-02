@@ -82,7 +82,10 @@ Yandex/Script/yandex-go.js         Yandex Go script
   scripts they load sit in `<Vendor>/Script/`.
 - Module `script-path` values use the raw URL on `main`:
   `https://raw.githubusercontent.com/b333b/adblocking-modules/main/<Vendor>/Script/<file>.js`
-- Every module's `#!homepage` is `https://github.com/b333b/adblocking-modules`.
+- Every module's name is `#!name=<App name> — AdBlock` (e.g. `#!name=Ozon Marketplace — AdBlock`),
+  `#!category=AdBlock`, and `#!homepage` is `https://github.com/b333b/adblocking-modules`.
+  Uploaded modules often carry other names ("— no ads", "— no banners"): rename them on import.
+- Uploaded modules come with `PASTE_RAW_URL_OF_<file>.js` placeholders: replace them with the raw URL.
 - Module files use the `.sgmodule` extension (rename `.module` uploads).
 - New apps are added the same way (e.g. `Ozon/ozon-marketplace.sgmodule` + `Ozon/Script/ozon-marketplace.js`),
   plus a line in [README.md](README.md) and in [Modules at a glance](#modules-at-a-glance).
@@ -328,7 +331,7 @@ nested inside another widget's `placeholders`, and deletes their `widgetStates` 
 | `advRefreshWithDelay` | `rtb.*` timer that reloads the page for fresh ads |
 | `adBanner` | `skeeter.*` bank and product banners |
 | `entryBannerWidget` | `regulardraw.*` prize-draw entry banner |
-| `curtain` | pop-up curtain banners |
+| `curtain` | pop-up curtain banners (separate `curtains` switch) |
 
 Any widget whose `name` starts with `rtb.` is dropped whatever its component is.
 
@@ -348,18 +351,31 @@ left byte-for-byte as they were. On two real captures: 12 and 22 ad tiles remove
 layout widgets), with 70 and 142 ordinary products left in place, no broken states and no paging
 fields changed.
 
-#### Ozon Marketplace: module argument
+#### Ozon Marketplace: module settings
 
-`argument=` takes `+`-joined tokens:
+The module declares `#!arguments` (with `#!arguments-desc`), so each switch can be changed in the
+module's settings in Shadowrocket. The `[Script]` line passes them to the script as one JSON object:
 
-| Token | Effect |
-| --- | --- |
-| component names (e.g. `advBanner+curtain`) | replace the default component list above |
-| `tiles:keep` | leave result grids alone entirely (layout widgets are still dropped) |
-| `sponsored:keep` | keep sponsored products, still drop the "Реклама" banner tiles |
+```
+argument={"ad_widgets":{{{ad_widgets}}},"curtains":{{{curtains}}},"grid_ad_banners":{{{grid_ad_banners}}},"sponsored_products":{{{sponsored_products}}},"extra":"{{{extra}}}"}
+```
 
-Switches don't affect the component list: `argument=tiles:keep` still uses the defaults, but
-`argument=advBanner+tiles:keep` drops only `advBanner` from the layout.
+| Setting | Default | Effect when `true` |
+| --- | --- | --- |
+| `ad_widgets` | `true` | drop the default layout widgets above, except `curtain` |
+| `curtains` | `true` | drop `curtain` pop-up banners |
+| `grid_ad_banners` | `true` | drop "Реклама" banner tiles inside result grids |
+| `sponsored_products` | `true` | drop sponsored product tiles inside result grids |
+| `extra` | empty | extra component names to drop, comma, `+` or space separated |
+
+- Widgets whose `name` starts with `rtb.` are dropped even with `ad_widgets: false`.
+- With both grid switches off, result grids are not parsed at all.
+- If the argument isn't valid JSON (for example the placeholders weren't filled in, or the value
+  was cut at a comma), every switch counts as on: the module behaves as with the defaults and the
+  settings are silently ignored. Check this first if turning a switch off has no effect.
+- A legacy `+`-joined list of component names still works and replaces the component list
+  (`argument=advBanner+curtain`). The earlier `tiles:keep` / `sponsored:keep` tokens are gone:
+  use `grid_ad_banners` / `sponsored_products` instead.
 
 Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
 `userMarketingActionsSelector`.
