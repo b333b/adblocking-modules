@@ -216,7 +216,7 @@ Nothing here is a plain URL-REGEX rule list. Rules were tried first and abandone
 |---|---|---|
 | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | **bank script** — carousel, card offers and promo sections; no logging, no stored state (formerly `ozon-carousel.js`) |
 | [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) | nothing by default (see [debug workflow](#ozon-bank-debug-workflow)) | **bank debug script** — capture pages, used when something breaks. Predates the current bank script: it does not know the `MFBonuses`, `api/mainPage`/`updateMainPage` routes or the `mfe-card-state` / `plastic-in-cart` / `banners-on-main` CSS selectors |
-| [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | **marketplace script** — drops ad widgets from composer pages |
+| [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | **marketplace script** — drops ad widgets from composer pages and ad tiles / sponsored products from result grids |
 
 A stale raw link is the single most common cause of "my change did nothing": check the real
 paths before writing a module line.
@@ -331,10 +331,38 @@ nested inside another widget's `placeholders`, and deletes their `widgetStates` 
 | `curtain` | pop-up curtain banners |
 
 Any widget whose `name` starts with `rtb.` is dropped whatever its component is.
-`argument=` overrides the component list.
+
+#### Ozon Marketplace: ads inside result grids
+
+Search ads don't live in `layout`, which is why layout pruning alone missed them. They sit inside
+the `catalog.searchResultsV2` grid, as tiles in its `widgetStates` entry (a JSON string):
+
+| Tile | How it is recognised |
+| --- | --- |
+| Ad banner tile | `tile.type === "banner"` with a `banner.badges[]` entry whose `text` is "Реклама"; each carries its own `pixel` and `impressionTrackingInfo` |
+| Sponsored product | ordinary `type: "product"` tile whose add-to-cart action carries an `advert` token under `extendMap` |
+
+The script parses every `widgetStates` string that contains `"tiles"`, drops both kinds of tile,
+and writes the state back as a string. States it can't parse, and grids with nothing to drop, are
+left byte-for-byte as they were. On two real captures: 12 and 22 ad tiles removed (on top of the
+layout widgets), with 70 and 142 ordinary products left in place, no broken states and no paging
+fields changed.
+
+#### Ozon Marketplace: module argument
+
+`argument=` takes `+`-joined tokens:
+
+| Token | Effect |
+| --- | --- |
+| component names (e.g. `advBanner+curtain`) | replace the default component list above |
+| `tiles:keep` | leave result grids alone entirely (layout widgets are still dropped) |
+| `sponsored:keep` | keep sponsored products, still drop the "Реклама" banner tiles |
+
+Switches don't affect the component list: `argument=tiles:keep` still uses the defaults, but
+`argument=advBanner+tiles:keep` drops only `advBanner` from the layout.
 
 Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
-`userMarketingActionsSelector`, and sponsored products inside product grids.
+`userMarketingActionsSelector`.
 
 `_action/v2/setBannerAction`, `_action/v2/regulardraw/markLkBannerAsSeen` and the
 `xapi.ozon.ru` logging endpoints are pure tracking and can be handled with plain rules

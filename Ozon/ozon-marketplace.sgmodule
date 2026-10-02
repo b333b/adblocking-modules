@@ -1,5 +1,5 @@
 #!name=Ozon Marketplace — AdBlock
-#!desc=Removes sponsored banners, video ads, curtain pop-ups, and draw banners
+#!desc=Removes sponsored banners, video ads, curtain pop-ups, draw banners, and ad tiles and sponsored products in search results
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
 [Script]
