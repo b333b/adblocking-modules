@@ -50,7 +50,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
-| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` removed from MITM, so the Lavka handlers are inactive) |
+| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka shows errors when it is MITM'd, so the Lavka handlers are inactive) |
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
@@ -622,7 +622,7 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Scooters | Promo tiles (points giveaways, subscription and minute-package upsells, story banners), promo block | Scooters screen filtered; nearest scooter, QR scan and menu kept |
 | Market | Hero ad carousel, "Реклама" tiles, sponsored product scrollboxes, ad banners and incuts in feeds and search, banner carousels on promo pages, header promo strip, fortune wheel entries and daily-reward pop-up, coins overlay in the video feed, FOMO sale badge, ad and onboarding pop-ups, bank card / Split / credit upsells in cart and profile, referral promos, "leave a review" nags | Stylesheet injected into Market pages; daily-reward response neutralised |
 | Eats | Ad pop-ups (main page, department and pharmacy screens), brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
-| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: `app.lavka.yandex.net` is not in MITM |
+| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: `app.lavka.yandex.net` is not in MITM, because Lavka errors when MITM'd |
 | Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, video player logs, Firebase Analytics | Rules / URL rewrites |
 
 Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery products and Market's organic product listings are not touched.
@@ -704,8 +704,7 @@ In any `typed_experiments.items`: `new_year_splash_2025`, `dynamic_splash_screen
 
 #### Go: app.lavka.yandex.net (Lavka web app)
 
-Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames, so the `yandexgo-lavka` script line never sees decrypted traffic. Add the host back to re-enable everything below.
-
+Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames on purpose, because **Lavka throws errors when its traffic is MITM'd** (with or without the script). The `yandexgo-lavka` script line stays in the module but never sees decrypted traffic. Don't add the host back unless the errors are solved; the notes below are kept for that case.
 
 - `POST .../lavka/v1/api/v1/upsale/media-feed` — `items[]` (goods), `media_items[]`, `layout_items[]` (`{type, id}`). Sponsored: `adv_tag_info` (erid, advertiser), `type: video_banner` (linked via `advertisement_id` ↔ layout `banner`), story informers (`informer_id` ↔ layout `story`).
 - `POST .../lavka/v1/api/v1/informers` — floating "personal_discounts" button → dropped.
@@ -732,7 +731,8 @@ Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[
 - Afisha web view (`afisha.yandex.ru`, opened from the tile with `promo_mode=normal`): lazy chunks `PromoBottomSheet`, `PromoFullscreen-component`, `ChatBotWidget` loaded but their data source was not seen (not in `api/graphql` responses); likely AdFox-driven and gone with the rules — unverified. Event `promoImage*`/`promoVideo*` fields in graphql are event artwork, not ads.
 - Service landings opened deliberately, not touched: `care.yandex.ru/go/home` (insurance "unique selling propositions" cards), `rentacar.yandex.ru` (own `promoBlocks`, e.g. motorcycle promo), Eats pharmacy `pharmacies-media/v1/articles` (health journal cards).
 - Not blocked: `api.browser.yandex.ru/uma_proto` (browser-engine telemetry; would need an extra MITM host).
-- Location-permission bar fix is experimental — see next section.
+- Lavka: find a way to filter its ads without the MITM errors (see the Lavka section), or drop the `yandexgo-lavka` line and Lavka handlers.
+- Location-permission bar fix is experimental (on since Oct 2026) — see next section.
 
 ### Go location-permission bar (experimental fix)
 
@@ -741,6 +741,6 @@ Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[
 Shown at the top of the **main screen on launch** when iOS location access is off. The bar itself is native (strings are not in any response, see history below), but its trigger appears to be server state:
 - At launch the app has no location and sends the zero-km fallback pin (`position_location_provider: zero_km`, `position_init_action: auto_location`, pin at Moscow's zero-km point). `persuggest/v1/finalsuggest` and the superapp layout's `shared.finalsuggest` copy answer `should_clarify_position: true` + `conditional_actions_v2[].actions[] {type: show_point_clarification_screen, action_reason: bad_coord_provider}` ("Куда подать машину?" screen).
 - User observation (2026-09-27): opening Taxi and going back removes the bar. Capture confirms: after Taxi opens, the next finalsuggest carries the pin moved to the suggested address (no `zero_km` provider / init action) and the response has **no** `should_clarify_position` and no clarification action.
-- Fix: `clearPositionClarification()` sets `should_clarify_position: false` and drops only `show_point_clarification_screen`/`bad_coord_provider` actions, in finalsuggest responses (`yandexgo-finalsuggest` script line) and in `shared.finalsuggest` of the superapp layout. This reproduces the post-Taxi state the app already reaches on its own. Kill switch: `HIDE_LOCATION_BAR` constant at the top of that block.
+- Fix: `clearPositionClarification()` sets `should_clarify_position: false` and drops only `show_point_clarification_screen`/`bad_coord_provider` actions, in finalsuggest responses (`yandexgo-finalsuggest` script line) and in `shared.finalsuggest` of the superapp layout. This reproduces the post-Taxi state the app already reaches on its own. Kill switch: `HIDE_LOCATION_BAR` constant at the top of that block — currently `true` (turned on in Oct 2026; it was `false` before).
 - Status: **unverified on device**. If the bar persists, the trigger is the `zero_km` provider on the client and nothing server-side can hide it → revert (set the constant to false or remove the script line). Side effect to watch: the Taxi "Куда подать машину?" confirmation no longer appears at launch with location off; pickup defaults to the suggested address, same as after the manual Taxi round-trip.
 - History: all five earlier captures searched for the four strings (decoded JSON, HTML, i18n keysets, yastatic JS, NBSP-tolerant) — none delivered over the network. `explaining_location_permission_screen_with_agreement` experiment (GDPR permission explainer) is unrelated and left alone. Workaround if the fix fails: iOS Settings → Yandex Go → Location "While Using".
