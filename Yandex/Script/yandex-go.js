@@ -506,7 +506,7 @@ function handleIntercity(body) {
 // the Taxi screen is opened the pin moves to the suggested address, the server
 // stops sending both, and the bar disappears. Clearing them at launch mirrors
 // that state. Set to false to restore stock behaviour.
-const HIDE_LOCATION_BAR = false;
+const HIDE_LOCATION_BAR = true;
 
 function isClarifyAction(a) {
   return isObj(a) && a.type === "show_point_clarification_screen" && a.action_reason === "bad_coord_provider";
