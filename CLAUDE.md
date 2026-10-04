@@ -50,7 +50,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
-| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `app.lavka.yandex.net`, `go.integration.market.yandex.ru`, `yandex.ru` |
+| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` removed from MITM, so the Lavka handlers are inactive) |
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
@@ -622,7 +622,7 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Scooters | Promo tiles (points giveaways, subscription and minute-package upsells, story banners), promo block | Scooters screen filtered; nearest scooter, QR scan and menu kept |
 | Market | Hero ad carousel, "Реклама" tiles, sponsored product scrollboxes, ad banners and incuts in feeds and search, banner carousels on promo pages, header promo strip, fortune wheel entries and daily-reward pop-up, coins overlay in the video feed, FOMO sale badge, ad and onboarding pop-ups, bank card / Split / credit upsells in cart and profile, referral promos, "leave a review" nags | Stylesheet injected into Market pages; daily-reward response neutralised |
 | Eats | Ad pop-ups (main page, department and pharmacy screens), brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
-| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay |
+| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: `app.lavka.yandex.net` is not in MITM |
 | Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, video player logs, Firebase Analytics | Rules / URL rewrites |
 
 Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery products and Market's organic product listings are not touched.
@@ -632,7 +632,7 @@ Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery pr
 - [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) — single http-response script, routed by URL (`ROUTES` at bottom)
 - [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) — standalone Go module (rules, URL rewrites, scripts, MITM). May be folded into the Maps module instead; if so, see below and delete this file.
 
-All Go sections append cleanly to the Maps module: `[Rule]`, `[URL Rewrite]`, `[Script]` lines go under the Maps module's matching headers. Keep a single `[MITM]` line and merge hostnames into it (`tc.mobile.yandex.net, tc.eats.yandex.ru, app.lavka.yandex.net, go.integration.market.yandex.ru, yandex.ru`). Script names are prefixed `yandexgo-` so they don't collide. Trade-off: the tracker rules (Metrica, Firebase, ad pixels) and the `yandex.ru` MITM then apply whenever the Maps module is on, and Go can't be toggled separately. See also [Cross-module overlaps](#cross-module-overlaps).
+All Go sections append cleanly to the Maps module: `[Rule]`, `[URL Rewrite]`, `[Script]` lines go under the Maps module's matching headers. Keep a single `[MITM]` line and merge hostnames into it (`tc.mobile.yandex.net, tc.eats.yandex.ru, go.integration.market.yandex.ru, yandex.ru`). Script names are prefixed `yandexgo-` so they don't collide. Trade-off: the tracker rules (Metrica, Firebase, ad pixels) and the `yandex.ru` MITM then apply whenever the Maps module is on, and Go can't be toggled separately. See also [Cross-module overlaps](#cross-module-overlaps).
 
 ### Go principles
 
@@ -655,7 +655,8 @@ Hosts: [tc.mobile.yandex.net](#go-tcmobileyandexnet-main-app-backend) · [go.int
 - `POST /4.0/mlutp/v1/widgets/layout/superapp` — main screen, flex/DivKit layout. `ui.sections[]`: payment_widgets, orders_widgets, navigation_divkit (big tiles), pager_widget (small tiles), taxi_block (search + suggestions), empty_products, bdui_media_banners, feed_onboarding_scroll_anchor, **feed**.
   - Feed section: `origType: feed_section`, `content[]` items of type `generic-offer-v2` (Market cards, Eats places, Lavka goods, Afisha), `shelf`, `video`, `media-adv-banner-single` (ad). Snippet ids in `shared.analytics` show sources: RETARGETING, EATS_PLACE, LAVKA, GCRM, recom_program `sdk_go_main`.
   - Pagination: `loadingSnippet`/`errorSnippet` (`closing_snippet`) fire a `MergeSectionAction` with `pagination_token`; the page request is the same endpoint with a top-level `sections` key in the body and the response contains only the `feed` section.
-  - Handling: `content = []`, snippets' `actions = {}` and `divData` replaced by an empty container.
+  - Oct 2026: the layout gained a second feed section, `feed_tab` (`origType: feed_tab_section`): empty `content` plus a `closing_snippet` that shows FeedSDK shimmers and fires a `MergeSectionAction` with `pagination_token` / `active_tab`. Follow-up responses contain only `feed_tab`, with `generic-offer-v2`, `shelf` and `media-adv-banner-single` items. `feed` itself now arrives without a `loadingSnippet`.
+  - Handling: `isFeedSection()` matches `origType` `feed[_*]_section` or `id` `feed` / `feed_tab`. Each match gets `content = []`, and its snippets' `actions = {}` and `divData` replaced by an empty container.
   - Same engine probably drives the in-ride feed (`superapp_order_details_feed` experiment) — pattern covers `/widgets/layout/` generally; unverified.
 - `POST /4.0/promotions/v1/list` — `fullscreen_banners`, `cards`, `notifications`, `tickets`, `stories`, `missed_seen`. Items bound to a real screen (`screens: ["chargers"]`, `feed_taxi_transporting`, `delivery_order_form_ndd`, `scooters`) auto-show → dropped. `NO_SCREEN` items are opened by deeplink (Safety Center promoblock) → kept.
 - `POST /4.0/promotions/v1/promotion/retrieve` — single on-demand info cards (wheelchair, pets, guide dogs). Not touched.
@@ -702,6 +703,9 @@ In any `typed_experiments.items`: `new_year_splash_2025`, `dynamic_splash_screen
 - `welcome-features`, `notifications-center` — empty in capture; not touched.
 
 #### Go: app.lavka.yandex.net (Lavka web app)
+
+Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames, so the `yandexgo-lavka` script line never sees decrypted traffic. Add the host back to re-enable everything below.
+
 
 - `POST .../lavka/v1/api/v1/upsale/media-feed` — `items[]` (goods), `media_items[]`, `layout_items[]` (`{type, id}`). Sponsored: `adv_tag_info` (erid, advertiser), `type: video_banner` (linked via `advertisement_id` ↔ layout `banner`), story informers (`informer_id` ↔ layout `story`).
 - `POST .../lavka/v1/api/v1/informers` — floating "personal_discounts" button → dropped.

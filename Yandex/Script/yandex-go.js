@@ -88,13 +88,20 @@ function neuterComponent(c) {
 // (types generic-offer-v2, shelf, video, media-adv-banner-single). The section
 // is kept (other parts of the layout reference it) but emptied, and its
 // loading/error "closing snippets" are neutered so pagination never fires.
+// Feed sections: "feed" (feed_section) and, since Oct 2026, "feed_tab"
+// (feed_tab_section, a tabbed variant with the same Market/Eats/ad items).
+// Any origType of the form feed[_*]_section is treated the same way.
+function isFeedSection(s) {
+  return isObj(s) && (/^feed(_[a-z]+)*_section$/.test(String(s.origType || "")) || s.id === "feed" || s.id === "feed_tab");
+}
+
 function handleLayout(body) {
   const sections = body && body.ui && body.ui.sections;
   if (!Array.isArray(sections)) return false;
   let changed = false;
   for (const s of sections) {
     if (!isObj(s)) continue;
-    const isFeed = s.origType === "feed_section" || s.id === "feed";
+    const isFeed = isFeedSection(s);
     const isMediaBanners = s.origType === "MediaBannersRenderData" || s.id === "bdui_media_banners";
     if (isFeed) {
       s.content = [];
