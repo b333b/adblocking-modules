@@ -52,4 +52,4 @@ yandexgo-dashboards = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.
 yandexgo-finalsuggest = type=http-response,pattern=^https:\/\/tc\.mobile\.yandex\.net\/4\.0\/persuggest\/v1\/finalsuggest,requires-body=1,max-size=-1,timeout=20,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-go.js
 
 [MITM]
-hostname = %APPEND% tc.mobile.yandex.net, tc.eats.yandex.ru, app.lavka.yandex.net, go.integration.market.yandex.ru, yandex.ru
+hostname = %APPEND% tc.mobile.yandex.net, tc.eats.yandex.ru, go.integration.market.yandex.ru, yandex.ru
