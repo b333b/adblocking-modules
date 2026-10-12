@@ -18,6 +18,7 @@
  *   market web view    go.integration.market.yandex.ru (HTML documents)
  *   market daily wheel go.integration.market.yandex.ru/api/web/...FortuneWheelDailyRewards...
  *   eats BDUI screens  tc.eats.yandex.ru/.../eats/v1/bdui-mobile/v1/* (department collections)
+ *   bdui screens       tc.mobile.yandex.net/4.0/bdui/v1/* (masstransit/main, taxi/tracking)
  */
 
 const url = ($request && $request.url) || "";
@@ -408,22 +409,55 @@ function handleMarketDailyRewards(body) {
   return true;
 }
 
-// Generic flex/DivKit screens on tc.mobile (bdui/v1/masstransit/main, ...):
-// neuter ad sections (MediaAdvHeroRenderData with erid, SDK banner carousels)
-// and drop Madv pop-up actions. Functional sections (where-to, suggests,
-// transport card, tickets) stay.
+// Generic flex/DivKit screens on tc.mobile (bdui/v1/masstransit/main,
+// bdui/v1/taxi/tracking, ...):
+//  - ad sections (MediaAdvHeroRenderData with erid, SDK banner carousels) are
+//    neutered and Madv pop-up actions dropped. Functional sections (where-to,
+//    suggests, transport card, tickets) stay.
+//  - feed sections are emptied and their "load more" snippets neutered, as on
+//    the main screen. taxi/tracking is the sheet under the ride card while a
+//    taxi is on its way: its only section is the Market/Eats/ad feed (pages
+//    1..n arrive on the same URL); the ride card itself is native
+//    (3.0/taxiontheway) and is not touched.
+//  - the screen's own "need_to_hide_feed_container" display flag (sent as
+//    false) is set to true so the emptied feed area collapses.
+//    Set HIDE_TRACKING_FEED_CONTAINER to false to leave the flag alone.
 const AD_SECTION_TYPES = /MediaAdv|SdkBanner|MediaBanners|Madv|CommonBannersWidget/i;
+const HIDE_TRACKING_FEED_CONTAINER = true;
+
+function hideFeedContainer(root) {
+  if (!HIDE_TRACKING_FEED_CONTAINER) return false;
+  let changed = false;
+  walk(root, (o) => {
+    if (o.type !== "SetGlobalDivVariablesAction" || !Array.isArray(o.variables)) return;
+    for (const v of o.variables) {
+      if (isObj(v) && v.name === "need_to_hide_feed_container" && v.value !== true) {
+        v.value = true;
+        changed = true;
+      }
+    }
+  });
+  return changed;
+}
 
 function handleBdui(body) {
   const sections = body && body.ui && body.ui.sections;
   if (!Array.isArray(sections)) return false;
   let changed = false;
   for (const s of sections) {
-    if (!isObj(s) || !AD_SECTION_TYPES.test(String(s.origType || ""))) continue;
-    if (Array.isArray(s.content)) s.content.forEach(neuterComponent);
-    changed = true;
+    if (!isObj(s)) continue;
+    if (isFeedSection(s)) {
+      s.content = [];
+      if (s.loadingSnippet) neuterComponent(s.loadingSnippet);
+      if (s.errorSnippet) neuterComponent(s.errorSnippet);
+      changed = true;
+    } else if (AD_SECTION_TYPES.test(String(s.origType || ""))) {
+      if (Array.isArray(s.content)) s.content.forEach(neuterComponent);
+      changed = true;
+    }
   }
   if (stripActions(body, AD_ACTION_TYPES)) changed = true;
+  if (hideFeedContainer(body.actions)) changed = true;
   return changed;
 }
 

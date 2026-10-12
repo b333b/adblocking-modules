@@ -50,7 +50,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
-| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (13 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka shows errors when it is MITM'd, so the Lavka handlers are inactive) |
+| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka shows errors when it is MITM'd; Lavka is not handled) |
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
@@ -614,6 +614,7 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Promotions | Stories, screen-bound promo pop-ups and notifications (e.g. chargers, delivery form, in-ride) | `promotions/v1/list` filtered; on-demand cards (safety centre, pets, wheelchair info) kept |
 | Order summary | Promo blocks | `summary_promoblocks` experiment off |
 | Taxi map | Animated campaign badges over the map | `mlutp/v1/products` filtered |
+| Taxi ride | Market/Eats/ad feed under the ride card while the taxi is on its way (product cards, shelves, `media-adv` banners) | `bdui/v1/taxi/tracking` feed emptied, its pagination trigger neutered, `need_to_hide_feed_container` set to true; ride card untouched |
 | Transport | Ad hero banner (erid) on the public-transport screen, "Когда придёт автобус" promo badge over the map | `bdui/v1/masstransit/main` ad section neutered; `inapp-communications` filtered |
 | Delivery | Urban-ads banner carousel, "Переезд под ключ"-style story banners on the order form | `ads-banner` widget removed from the dashboard, `urbanads/sdk` neutered, `delivery-promotions` emptied |
 | Intercity | Promo/onboarding story banner carousel ("Шаттл", "Что такое Межгород?", "Какой тариф выбрать") | Banners and carousel section removed |
@@ -622,7 +623,7 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Scooters | Promo tiles (points giveaways, subscription and minute-package upsells, story banners), promo block | Scooters screen filtered; nearest scooter, QR scan and menu kept |
 | Market | Hero ad carousel, "Реклама" tiles, sponsored product scrollboxes, ad banners and incuts in feeds and search, banner carousels on promo pages, header promo strip, fortune wheel entries and daily-reward pop-up, coins overlay in the video feed, FOMO sale badge, ad and onboarding pop-ups, bank card / Split / credit upsells in cart and profile, referral promos, "leave a review" nags | Stylesheet injected into Market pages; daily-reward response neutralised |
 | Eats | Ad pop-ups (main page, department and pharmacy screens), brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
-| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: `app.lavka.yandex.net` is not in MITM, because Lavka errors when MITM'd |
+| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: no MITM host and no script line, because Lavka errors when MITM'd |
 | Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, video player logs, Firebase Analytics | Rules / URL rewrites |
 
 Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery products and Market's organic product listings are not touched.
@@ -657,7 +658,7 @@ Hosts: [tc.mobile.yandex.net](#go-tcmobileyandexnet-main-app-backend) · [go.int
   - Pagination: `loadingSnippet`/`errorSnippet` (`closing_snippet`) fire a `MergeSectionAction` with `pagination_token`; the page request is the same endpoint with a top-level `sections` key in the body and the response contains only the `feed` section.
   - Oct 2026: the layout gained a second feed section, `feed_tab` (`origType: feed_tab_section`): empty `content` plus a `closing_snippet` that shows FeedSDK shimmers and fires a `MergeSectionAction` with `pagination_token` / `active_tab`. Follow-up responses contain only `feed_tab`, with `generic-offer-v2`, `shelf` and `media-adv-banner-single` items. `feed` itself now arrives without a `loadingSnippet`.
   - Handling: `isFeedSection()` matches `origType` `feed[_*]_section` or `id` `feed` / `feed_tab`. Each match gets `content = []`, and its snippets' `actions = {}` and `divData` replaced by an empty container.
-  - Same engine probably drives the in-ride feed (`superapp_order_details_feed` experiment) — pattern covers `/widgets/layout/` generally; unverified.
+  - The in-ride feed uses the same feed section but arrives on a different endpoint, `bdui/v1/taxi/tracking` (see below).
 - `POST /4.0/promotions/v1/list` — `fullscreen_banners`, `cards`, `notifications`, `tickets`, `stories`, `missed_seen`. Items bound to a real screen (`screens: ["chargers"]`, `feed_taxi_transporting`, `delivery_order_form_ndd`, `scooters`) auto-show → dropped. `NO_SCREEN` items are opened by deeplink (Safety Center promoblock) → kept.
 - `POST /4.0/promotions/v1/promotion/retrieve` — single on-demand info cards (wheelchair, pets, guide dogs). Not touched.
 - `POST /4.0/promotions/v1/splash` — `splash_screens[]` (`type: dynamic_promo`) → emptied.
@@ -667,6 +668,7 @@ Hosts: [tc.mobile.yandex.net](#go-tcmobileyandexnet-main-app-backend) · [go.int
 - `POST /4.0/scooters/v1/promoblock` — `{}` observed → `reject-dict`.
 - `POST /4.0/mlutp/v1/products/screen/chargers-discovery` — same shape as scooters (handled by the products route). Promo tiles: `personal_shortcut:energy_pass:…` ("Как сэкономить? С выгодным предложением"), `personal_shortcut:city_sub_buy:…` ("Кое-что новое / Яндекс Движ") → dropped via `PROMO_PERSONAL_KINDS`. Kept: QR scan, `passes:id` ("Заряжайтесь выгоднее" menu item), discounts, beacons, support, legal.
 - `POST /4.0/bdui/v1/masstransit/main` — Transport screen, flex/DivKit envelope. Sections: where_to, masstransit_suggests, masstransit_transport_card (Тройка), masstransit_tickets_v2, **ads** (`origType: MediaAdvHeroRenderData`, ORD/erid) → neutered by generic `handleBdui` (`AD_SECTION_TYPES`: MediaAdv|SdkBanner|MediaBanners|Madv|CommonBannersWidget) + Madv pop-up actions stripped.
+- `POST /4.0/bdui/v1/taxi/tracking` — sheet under the ride card during an active order (seen Oct 2026, status `driving`). Request body: `order_status`, `order_tariff_class`, `userLocations`, `payment_info`, `media_size_info`; pages 2..n add a top-level `sections: [{raw: {id: feed}, refreshParams: {pagination_token}}]`. Response: flex/DivKit envelope, `scaffold.type: TrackedScrollScaffold`, and **one** section, `feed` (`feed_section`, 17–19 items: `generic-offer-v2` Market cards mostly carrying ad markers/erid, `shelf`, `media-adv-banner-single`/`-double`). `actions.onApply` sets the global div variable `need_to_hide_feed_container: false`. Handling (generic `handleBdui`): feed sections emptied and snippets neutered like the main screen; `need_to_hide_feed_container` set to `true` (kill switch `HIDE_TRACKING_FEED_CONTAINER`). The ride card (driver, car, status, cancel) is native, from `3.0/taxiontheway`; its `promotions`/`brandings` were empty and it is not touched. Sheet heights per status come from the `superapp_order_details_feed` experiment (left alone; disabling it is the fallback if the empty sheet looks wrong). Related, not touched: `mlutp/v1/inapp-widgets` (order widget), `3.0/orderchat`, `4.0/orderperformerinfo`.
 - `POST /4.0/urbanads/sdk` — body `{format: hero|popup, page: DostavkaMainPage|feedback}`; response is an ad unit (`SdkBannerRenderData` → `SdkBannerCarousel`, ORD legal info, "why this ad" kebab popup) → every section neutered.
 - `POST /4.0/inapp-communications/v2/communications-masstransit` — `offers.objects_over_map.items[]` (campaign badge "Когда придёт автобус", `analytics_payload.campaign_id`, `yandextaxi://banner?id=`) → filtered with `isPromoMapObject`, `priority` synced; `offers.promoblocks.items` → emptied. Same handler covers any `inapp-communications/*`.
 - `POST /4.0/inapp-communications/v1/delivery-promotions` — `banners.banner_list[]` story banners on the Delivery form → emptied.
@@ -704,7 +706,7 @@ In any `typed_experiments.items`: `new_year_splash_2025`, `dynamic_splash_screen
 
 #### Go: app.lavka.yandex.net (Lavka web app)
 
-Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames on purpose, because **Lavka throws errors when its traffic is MITM'd** (with or without the script). The `yandexgo-lavka` script line stays in the module but never sees decrypted traffic. Don't add the host back unless the errors are solved; the notes below are kept for that case.
+Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames on purpose, because **Lavka throws errors when its traffic is MITM'd** (with or without the script). The `yandexgo-lavka` script line was removed from the module too; the Lavka handlers (`handleLavkaMediaFeed`, `handleLavkaInformers`) remain in the script but nothing routes to them. Don't add the host back unless the errors are solved; the notes below are kept for that case (re-adding needs both the MITM host and a `yandexgo-lavka` line for `.../lavka/v1/api/v1/(upsale/media-feed|informers)`).
 
 - `POST .../lavka/v1/api/v1/upsale/media-feed` — `items[]` (goods), `media_items[]`, `layout_items[]` (`{type, id}`). Sponsored: `adv_tag_info` (erid, advertiser), `type: video_banner` (linked via `advertisement_id` ↔ layout `banner`), story informers (`informer_id` ↔ layout `story`).
 - `POST .../lavka/v1/api/v1/informers` — floating "personal_discounts" button → dropped.
@@ -721,7 +723,7 @@ Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[
 
 ### Go open items
 
-- In-ride feed verification (capture during an active ride).
+- Ride-screen feed (`bdui/v1/taxi/tracking`): handled since Oct 2026, verified on a capture only. On device, check whether `need_to_hide_feed_container: true` collapses the empty sheet area; if it leaves a blank or broken sheet, set `HIDE_TRACKING_FEED_CONTAINER` to false. Statuses other than `driving` (waiting, transporting) not captured yet.
 - Tile promo badges in `pager_widget` ("акция", "стирка").
 - `payment_widgets` Yandex Pay promo.
 - Eats restaurant-page and search ads (not in capture).
@@ -731,7 +733,7 @@ Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[
 - Afisha web view (`afisha.yandex.ru`, opened from the tile with `promo_mode=normal`): lazy chunks `PromoBottomSheet`, `PromoFullscreen-component`, `ChatBotWidget` loaded but their data source was not seen (not in `api/graphql` responses); likely AdFox-driven and gone with the rules — unverified. Event `promoImage*`/`promoVideo*` fields in graphql are event artwork, not ads.
 - Service landings opened deliberately, not touched: `care.yandex.ru/go/home` (insurance "unique selling propositions" cards), `rentacar.yandex.ru` (own `promoBlocks`, e.g. motorcycle promo), Eats pharmacy `pharmacies-media/v1/articles` (health journal cards).
 - Not blocked: `api.browser.yandex.ru/uma_proto` (browser-engine telemetry; would need an extra MITM host).
-- Lavka: find a way to filter its ads without the MITM errors (see the Lavka section), or drop the `yandexgo-lavka` line and Lavka handlers.
+- Lavka: find a way to filter its ads without the MITM errors (see the Lavka section), or also drop the now-unused Lavka handlers from the script.
 - Location-permission bar fix is experimental (on since Oct 2026) — see next section.
 
 ### Go location-permission bar (experimental fix)
