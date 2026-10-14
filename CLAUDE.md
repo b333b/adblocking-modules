@@ -92,7 +92,7 @@ Dixy/Script/                       Dixy (no module yet; .gitkeep only)
   (`*.list`, one rule per line without a policy; the policy is on the module's `RULE-SET` line).
 - Module `script-path` values use the raw URL on `main`:
   `https://raw.githubusercontent.com/b333b/adblocking-modules/main/<Vendor>/Script/<file>.js`
-- Every module's name is `#!name=<App name> — AdBlock` (e.g. `#!name=Ozon Marketplace — AdBlock`),
+- Every module's name is `#!name=[AdBlock] <App name>` (e.g. `#!name=[AdBlock] Ozon Marketplace`),
   `#!category=AdBlock`, and `#!homepage` is `https://github.com/b333b/adblocking-modules`.
   Uploaded modules often carry other names ("— no ads", "— no banners"): rename them on import.
 - Uploaded modules come with `PASTE_RAW_URL_OF_<file>.js` placeholders: replace them with the raw URL.
