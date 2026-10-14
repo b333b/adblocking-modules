@@ -1,6 +1,10 @@
-# MegaFon analytics hosts, loaded by Megafon/megafon.sgmodule when analytics is true.
-# One rule per line, no policy: the module's RULE-SET line adds REJECT.
+# MegaFon — AdBlock: analytics hosts (loaded when the module's analytics setting is true).
+# Policy (REJECT) comes from the RULE-SET line in Megafon/megafon.sgmodule.
+# Yandex Metrica in the web app, incl. numbered counter subdomains and Webvisor/clickmap
 DOMAIN-SUFFIX,mc.yandex.ru
+# Varioqub A/B script loaded by Metrica
 DOMAIN,abt.s3.yandex.net
+# MyTracker SDK in the native shell (also ts. and ip4. subdomains)
 DOMAIN-SUFFIX,tracker-api.vk-analytics.ru
+# First-party Elastic APM RUM telemetry (settings.json "track" is also switched off by the script)
 URL-REGEX,^https:\/\/lk\.megafon\.ru\/track\/intake\/

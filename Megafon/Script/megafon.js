@@ -1,22 +1,27 @@
 // MegaFon (iOS app): removes promo banners, stories, pop-ups, offers, loan ads, game center,
-// onboarding tips, surveys, "new" badges, the VPN warning bar and first-party telemetry.
+// onboarding tips, surveys, "new" badges, the VPN warning bar, chosen main-screen sections, the
+// "Для меня" tab and first-party telemetry.
 //
 // The iOS app is a thin shell around the lk.megafon.ru web app (WebView). Every screen is built
 // from JSON on api.megafon.ru/mlk/api/*, and the web app reads a feature switchboard
 // (appConfig/wlk) whose flags default to "hidden" when they are false or missing. So most
 // blocks are removed by switching a flag off and emptying the matching list; wrappers, keys and
 // everything else (balance, tariff, remainders, payments, account data) are passed through.
+// What has no flag or list is hidden by a style (and, for one section, a small text rule) that
+// the script adds to the page itself.
 //
 // Stories and in-app pop-ups come from the InAppStory web SDK (api.inappstory.ru). Those
 // requests are only edited when they come from the MegaFon web app (Origin/Referer
 // lk.megafon.ru), so other apps that use InAppStory are left alone.
 //
 // Settings come from the module's #!arguments as one JSON object, e.g.
-//   argument={"banners":true,"stories":true,...,"shortcuts":"start+megacinema+shop","extra_flags":""}
+//   argument={"banners":true,...,"sections":"mega5g+megafamily+cashback+roaming","shortcuts":"start+megacinema+shop","extra_flags":"showVacancies"}
 // Every switch is on unless it is false. If the argument is not valid JSON, all switches count
-// as on and the defaults below are used. Unexpected response shapes are passed through untouched.
+// as on and the list defaults below are used. Unexpected response shapes are passed through untouched.
 
 const DEFAULT_SHORTCUTS = ['start', 'megacinema', 'shop'];
+const DEFAULT_SECTIONS = ['mega5g', 'megafamily', 'cashback', 'roaming'];
+const DEFAULT_EXTRA_FLAGS = ['showVacancies'];
 
 const arg = typeof $argument !== 'undefined' ? String($argument) : '';
 let S = null;
@@ -28,8 +33,10 @@ const list = (k, def) => {
   if (!S || typeof S[k] !== 'string') return def;
   return S[k].split(/[+,\s]+/).filter((t) => /^[A-Za-z][A-Za-z0-9_-]*$/.test(t));
 };
+const sections = list('sections', DEFAULT_SECTIONS).map((s) => s.toLowerCase());
+const hideSection = (name) => sections.indexOf(name) >= 0;
 
-// appConfig/wlk flags switched off by each setting: [section, flag].
+// appConfig/wlk flags switched off by each on/off setting: [section, flag].
 const FLAG_GROUPS = {
   banners: [['main', 'showPromoBanner']],
   stories: [['main', 'showStories'], ['main', 'showStoriesTags'], ['services', 'showStories']],
@@ -39,6 +46,11 @@ const FLAG_GROUPS = {
   games: [['loyalty', 'showGameCenter']],
   onboarding: [['common', 'showOnboardings']],
   surveys: [['more', 'surveyAlwaysOnEnabled'], ['common', 'surveyMegaFamilyGroup']],
+};
+// ...and by each entry of the "sections" list.
+const SECTION_FLAGS = {
+  megafamily: [['main', 'showMyNumbers'], ['main', 'showFamily']],
+  cashback: [['main', 'showCashbackWidget']],
 };
 
 const isObj = (o) => o !== null && typeof o === 'object' && !Array.isArray(o);
@@ -68,7 +80,11 @@ function appConfig(d) {
     if (!on(key)) continue;
     for (const [section, flag] of FLAG_GROUPS[key]) changed = switchOff(d[section], flag) || changed;
   }
-  const extra = list('extra_flags', []);
+  for (const key of Object.keys(SECTION_FLAGS)) {
+    if (!hideSection(key)) continue;
+    for (const [section, flag] of SECTION_FLAGS[key]) changed = switchOff(d[section], flag) || changed;
+  }
+  const extra = list('extra_flags', DEFAULT_EXTRA_FLAGS);
   if (extra.length) {
     for (const section of Object.keys(d)) {
       if (!isObj(d[section])) continue;
@@ -133,13 +149,24 @@ const API = [
     return changed;
   }],
 
-  // Shortcut row (Кинотеатр, МегаКино, Товары, …): drop the listed appIds.
+  // Shortcut row (service shelf: Кинотеатр, МегаКино, Товары, …): drop the listed appIds.
   [/^\/mlk\/api\/superapp\/components$/, (d) => {
     const hide = list('shortcuts', DEFAULT_SHORTCUTS);
     if (!hide.length || !isObj(d) || !Array.isArray(d.apps)) return false;
     const kept = d.apps.filter((a) => !(isObj(a) && hide.indexOf(String(a.appId)) >= 0));
     if (kept.length === d.apps.length) return false;
     d.apps = kept;
+    return true;
+  }],
+
+  // Account tags. The Мега5G widget on the main screen shows only while "mega5g_available" is
+  // present and "mega5g_ison" is not; without either tag it renders nothing. The same tags also
+  // pick 5G stories and pop-ups.
+  [/^\/mlk\/api\/stories\/tags$/, (d) => {
+    if (!hideSection('mega5g') || !isObj(d) || !Array.isArray(d.tags)) return false;
+    const kept = d.tags.filter((t) => !/^mega5g/i.test(String(t)));
+    if (kept.length === d.tags.length) return false;
+    d.tags = kept;
     return true;
   }],
 
@@ -154,10 +181,49 @@ const API = [
 // before loading it), and closing it is only remembered for the session, so it comes back on every
 // launch. It is removed twice over: a style injected into the page hides it, and the component's
 // own chunk is patched to start in its "already closed" state, in which it renders nothing.
-const PAGE_STYLE_ID = 'adblock-megafon';
-const VPN_CSS = '.vpn-notification,[data-testid^="VpnNotification"]{display:none!important}';
+const PAGE_MARK = 'adblock-megafon';
 // In the chunk: [closed, setClosed] = useState(!!storageGet(SESSION_VPN_KEY)) -> useState(true)
 const VPN_STATE_INIT = /useState\)\(!!\(0,[\w$]+\.[\w$]+\)\([\w$]+\)\)/g;
+
+// Main-screen sections, by the root class of their component (cnCreate names in main.<hash>.js).
+const SECTION_CSS = {
+  mega5g: ['.main-mega-internet-widget'],
+  megafamily: ['.main-my-numbers', '.main-remainders-megafamily'],
+  cashback: ['.main-cashback-widget'],
+  roaming: ['[class^="main-roaming"]', '[class*=" main-roaming"]'],
+};
+// Sections whose class name is not known: hidden by their heading text (see pageScript).
+const SECTION_TITLES = {
+  roaming: '^Роуминг',
+};
+
+function pageCss(withScript) {
+  const sel = [];
+  if (on('vpn_warning')) sel.push('.vpn-notification', '[data-testid^="VpnNotification"]');
+  if (on('for_me_tab')) sel.push('.bottom-menu [data-ym-title="Для меня"]');
+  for (const key of Object.keys(SECTION_CSS)) if (hideSection(key)) sel.push.apply(sel, SECTION_CSS[key]);
+  if (withScript) sel.push('[data-' + PAGE_MARK + '-hide]');
+  return sel.length ? sel.join(',') + '{display:none!important}' : '';
+}
+
+// Hides a main-screen block by its heading: finds h1–h6 whose text matches, walks up to the
+// nearest element with a "main-…" block class, and marks it (the style above hides marked
+// elements). A block is only marked when that heading is the only heading inside it, so a
+// container holding several sections is never hidden. Runs again whenever the page changes.
+function pageScript() {
+  const titles = Object.keys(SECTION_TITLES).filter(hideSection).map((k) => SECTION_TITLES[k]);
+  if (!titles.length) return '';
+  const re = JSON.stringify(titles.join('|'));
+  const attr = JSON.stringify('data-' + PAGE_MARK + '-hide');
+  return '(function(){try{var re=new RegExp(' + re + '),attr=' + attr + ',busy=false,H="h1,h2,h3,h4,h5,h6";' +
+    'function block(h){for(var el=h.parentElement;el&&el!==document.body;el=el.parentElement){var c=el.classList||[];' +
+    'for(var i=0;i<c.length;i++){if(/^main-[a-z0-9-]+$/.test(c[i])&&!/^main-(page|layout|content|container)$/.test(c[i]))return el;}}return null;}' +
+    'function run(){busy=false;var hs=document.querySelectorAll(H);for(var i=0;i<hs.length;i++){' +
+    'if(!re.test((hs[i].textContent||"").trim()))continue;var b=block(hs[i]);' +
+    'if(b&&!b.hasAttribute(attr)&&b.querySelectorAll(H).length===1)b.setAttribute(attr,"");}}' +
+    'function later(){if(!busy){busy=true;if(window.requestAnimationFrame)window.requestAnimationFrame(run);else setTimeout(run,50);}}' +
+    'new MutationObserver(later).observe(document.documentElement,{childList:true,subtree:true});later();}catch(e){}})();';
+}
 
 const LK = [
   // Web app service settings; "track" enables the Elastic APM RUM agent (/track/intake/v2/rum/events).
@@ -171,14 +237,19 @@ const LK = [
     return js.replace(VPN_STATE_INIT, 'useState)(!0)');
   }, 'text'],
 
-  // The page itself (index.html, served for every app route): add the hiding style to <head>.
+  // The page itself (index.html, served for every app route): add the style (and the heading
+  // rule, when needed) to <head>.
   [/^\/(?!track\/|public\/)[\w\/-]*$/, (html) => {
-    if (!on('vpn_warning') || !/<html[\s>]/i.test(html)) return null;
-    if (html.indexOf('id="' + PAGE_STYLE_ID + '"') >= 0) return null;
+    if (!/<html[\s>]/i.test(html) || html.indexOf('id="' + PAGE_MARK + '"') >= 0) return null;
     const m = html.match(/<head(\s[^>]*)?>/i);
     if (!m) return null;
+    const js = pageScript();
+    const css = pageCss(!!js);
+    if (!css) return null;
+    const inject = '<style id="' + PAGE_MARK + '">' + css + '</style>' +
+      (js ? '<script id="' + PAGE_MARK + '-js">' + js + '</script>' : '');
     const at = m.index + m[0].length;
-    return html.slice(0, at) + '<style id="' + PAGE_STYLE_ID + '">' + VPN_CSS + '</style>' + html.slice(at);
+    return html.slice(0, at) + inject + html.slice(at);
   }, 'text'],
 ];
 
