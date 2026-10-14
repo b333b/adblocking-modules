@@ -1,0 +1,3 @@
+# Loaded by Megafon/megafon.sgmodule when analytics is false. A rule set can't be empty,
+# so it holds one rule that never matches (.invalid is a reserved TLD).
+DOMAIN,never-matches.invalid

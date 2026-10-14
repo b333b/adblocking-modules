@@ -11,16 +11,16 @@ one top-level section per app.
 
 ## Contents
 
-| Shared | [Avito](#avito) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
-|---|---|---|---|---|
-| [Git](#git) | [App facts](#avito-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
-| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
-| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
-| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
-| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Script conventions](#ozon-script-conventions) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
-| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
-| [README](README.md) | | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
-| | | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |
+| Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
+|---|---|---|---|---|---|
+| [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
+| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
+| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
+| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
+| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
+| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
+| [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
+| | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |
 
 ---
 
@@ -47,6 +47,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | App | iOS bundle | Module | Script(s) | Script entries | MITM hosts |
 |---|---|---|---|---|---|
 | Avito | `online.anero.app` | [`Avito/avito.sgmodule`](Avito/avito.sgmodule) | [`Avito/Script/avito.js`](Avito/Script/avito.js) | `avito-ads` | `app.avito.ru`, `www.avito.ru`, `stats.avito.ru` |
+| MegaFon | — | [`Megafon/megafon.sgmodule`](Megafon/megafon.sgmodule) | [`Megafon/Script/megafon.js`](Megafon/Script/megafon.js); rule sets [`Megafon/Rules/analytics-true.list`](Megafon/Rules/analytics-true.list), [`analytics-false.list`](Megafon/Rules/analytics-false.list) | `megafon`, `megafon-page` | `api.megafon.ru`, `lk.megafon.ru`, `api.inappstory.ru` |
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
@@ -55,6 +56,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | App | Last tested on | Written | Status |
 |---|---|---|---|
 | Avito | 230.1 | from scratch (not a fork) | working |
+| MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | new, not yet tested on device, see [known risks](#megafon-known-risks--to-verify-on-device) |
 | Ozon Bank | — | from scratch | working |
 | Ozon Marketplace | — | from scratch | new |
 | Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
@@ -67,6 +69,10 @@ CLAUDE.md                          this file
 README.md                          install links (raw .sgmodule URLs) for every module
 Avito/avito.sgmodule               Avito module
 Avito/Script/avito.js              Avito response script
+Megafon/megafon.sgmodule           MegaFon module (settings in #!arguments)
+Megafon/Script/megafon.js          MegaFon response script
+Megafon/Rules/analytics-true.list  MegaFon analytics hosts (analytics: true)
+Megafon/Rules/analytics-false.list MegaFon placeholder rule set (analytics: false)
 Ozon/ozon-bank.sgmodule            Ozon Bank module, loads the clean script
 Ozon/ozon-marketplace.sgmodule     Ozon Marketplace module
 Ozon/Script/ozon-bank.js           Ozon Bank clean script
@@ -76,13 +82,14 @@ Yandex/yandex-maps.sgmodule        Yandex Maps module
 Yandex/yandex-go.sgmodule          Yandex Go module
 Yandex/Script/yandex-maps.js       Yandex Maps script (protobuf + JSON)
 Yandex/Script/yandex-go.js         Yandex Go script
-Megafon/Script/                    Megafon (no module yet; .gitkeep only)
 Dixy/Script/                       Dixy (no module yet; .gitkeep only)
 ```
 
 - Empty folders hold a `.gitkeep` (git doesn't track empty folders); delete it once real files land there.
+
 - One folder per vendor: `<Vendor>/`. Modules (`*.sgmodule`) sit in the vendor folder; the
-  scripts they load sit in `<Vendor>/Script/`.
+  scripts they load sit in `<Vendor>/Script/`, and rule sets they load sit in `<Vendor>/Rules/`
+  (`*.list`, one rule per line without a policy; the policy is on the module's `RULE-SET` line).
 - Module `script-path` values use the raw URL on `main`:
   `https://raw.githubusercontent.com/b333b/adblocking-modules/main/<Vendor>/Script/<file>.js`
 - Every module's name is `#!name=<App name> — AdBlock` (e.g. `#!name=Ozon Marketplace — AdBlock`),
@@ -120,6 +127,11 @@ Facts that apply to every module.
   testing; do JSON edits in JS scripts instead.
 - Settings belong in the module line (`argument=`), not in the JS file: editing JS on a phone
   introduces curly quotes and breaks the script silently.
+- `#!arguments` placeholders (`{{{name}}}`) are replaced in the module text before it is applied
+  (the Shadowrocket manual shows them in `[MITM]`; Surge does the same anywhere in a module).
+  Rules can't be switched by a script argument, so MegaFon switches a whole rule set by putting
+  the placeholder in its URL (`analytics-{{{analytics}}}.list`); see
+  [MegaFon module settings](#megafon-module-settings). Not yet confirmed on device.
 - All scripts fail open: unexpected shape → pass the original body through (`$done({})`), never a
   half-edited body.
 
@@ -127,18 +139,23 @@ Facts that apply to every module.
 
 Rules and rewrites apply globally whenever a module is enabled, not only to its app.
 
-| Item | Avito | Yandex Maps | Yandex Go |
-|---|---|---|---|
-| `amc.yandex.ru` | `DOMAIN` REJECT | | `DOMAIN` REJECT |
-| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | `DOMAIN` REJECT | |
-| `mc.yandex.ru` | | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |
-| `app-analytics-services.com` | `DOMAIN` REJECT | | `DOMAIN-SUFFIX` REJECT |
-| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | yes | yes |
-| `yandex.ru/an/` | | `reject-200` | `reject` |
-| `yandex.ru/clck/` | | all of `clck/` → `reject-200` | only `clck/(click\|jclck)` → `reject`; `clck/redir` (real link redirects) deliberately left alone |
+| Item | Avito | MegaFon | Yandex Maps | Yandex Go |
+|---|---|---|---|---|
+| `amc.yandex.ru` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |
+| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | |
+| `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set (`analytics` switch) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |
+| `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set (`analytics` switch) | | |
+| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |
+| `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |
+| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes |
+| `yandex.ru/an/` | | | `reject-200` | `reject` |
+| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/(click\|jclck)` → `reject`; `clck/redir` (real link redirects) deliberately left alone |
 
 With Maps enabled, its broader `yandex.ru/clck/` rule also catches `clck/redir`, which Go
 deliberately keeps working. Duplicate REJECT rules are harmless.
+
+MegaFon's `analytics: false` only turns off MegaFon's own copy of these rules: with Avito,
+Yandex Maps or Yandex Go enabled, Metrica and MyTracker stay blocked for every app.
 
 ---
 
@@ -203,6 +220,210 @@ Candidates if more cleanup is wanted on the item card: `fmpOffer`, `fmpCalculato
 
 - Home feed pagination: next page uses `offset` + `showedPageCount`; if the client derives offset from item count, dropping entries could cause an occasional duplicate item.
 - `searchPromoHeaderWidget` also carries `toolbarConfig` (dark toolbar theme); removing it should fall back to the default toolbar.
+
+---
+
+## MegaFon
+
+Shadowrocket module that strips promo, pop-ups, upsell and analytics from the MegaFon iOS app
+(personal account, «МегаФон»). Written from scratch (not a fork). Every content switch is a
+module argument, like [Ozon Marketplace](#ozon-marketplace-module-settings).
+
+Files:
+- [`Megafon/megafon.sgmodule`](Megafon/megafon.sgmodule) — `#!arguments`, analytics rule set, header rewrites, two script entries (`megafon` for the JSON endpoints, `megafon-page` for the `lk.megafon.ru` page and the VPN warning chunk; same script, same argument), MITM hosts
+- [`Megafon/Script/megafon.js`](Megafon/Script/megafon.js) — single http-response script, routed by host + path; every handler fails open (original body passed through)
+- [`Megafon/Rules/analytics-true.list`](Megafon/Rules/analytics-true.list), [`Megafon/Rules/analytics-false.list`](Megafon/Rules/analytics-false.list) — analytics hosts; the module loads one of them depending on the `analytics` switch
+
+### MegaFon app facts
+
+From a capture of the iOS app 4.66.1 (web app v2.158.1), October 2026:
+
+- The app is a thin native shell around the `lk.megafon.ru` web app (React, rspack chunks under
+  `/public/rwlk/`) in a WebView. Nearly all traffic is the WebView's (Safari user agent, `Origin:
+  https://lk.megafon.ru`, extra header `X-Cabinet-User-Agent: NLK iOS Phone <version>`). The
+  native shell itself (`User-Agent: Megafon/2 CFNetwork/…`) only does auth refresh, the Who Calls
+  antispam database (`whocalls.megafon.ru`) and MyTracker.
+- Screens are built from JSON on `https://api.megafon.ru/mlk/api/*` (gzip; the server ignores
+  `br`/`zstd`). The module still forces `Accept-Encoding: gzip` on scripted endpoints.
+- Stories and in-app pop-up campaigns come from the InAppStory JS SDK (`api.inappstory.ru`,
+  `X-User-Agent: InAppStoryJSSDK/…`); its requests carry `Origin: https://lk.megafon.ru`.
+- No certificate pinning on `api.megafon.ru`, `lk.megafon.ru`, `api.inappstory.ru` (the MITM
+  capture worked, login included).
+- Caching: API replies are `Cache-Control: no-store` but also carry
+  `X-Cabinet-Cache-Control: max-age=300, …, stale-while-revalidate=7776000`, and the page
+  registers a service worker. Expect the web app to show its stored copy first and refresh it in
+  the background: judge every change over **two launches**.
+- `index.html` throws on any `/public/rwlk/*.js` chunk that fails to load, then refetches it and
+  reports a `white_screen` crash. Never block `lk.megafon.ru` chunks (`metrika.*.js` included);
+  block the hosts they call instead.
+
+### MegaFon: the appConfig switchboard
+
+`GET /mlk/api/appConfig/wlk` returns feature flags in sections `main`, `services`, `finance`,
+`loyalty`, `more`, `common`, `tariff`. The web app reads them as `{showX: v = false}`, so a flag
+that is `false` or missing hides its block. That makes switching flags off the cleanest way to
+remove a whole block; the matching lists are emptied as well, in case a component skips the flag.
+The script only turns `true` into `false`; it never adds or removes keys.
+
+| Setting | Flags switched off |
+|---|---|
+| `banners` | `main.showPromoBanner` |
+| `stories` | `main.showStories`, `main.showStoriesTags`, `services.showStories` |
+| `popups` | `main.showPopUpOffers`, `main.showMfoAssent` |
+| `offers` | `loyalty.showPersonalOfferSection`, `loyalty.showSmartshopping` |
+| `loans` | `finance.showMfo` (hides the "Платежи / Деньги" tabs in Finance; the "Деньги" tab is the loans/credit-card marketplace) |
+| `games` | `loyalty.showGameCenter` |
+| `onboarding` | `common.showOnboardings` |
+| `surveys` | `more.surveyAlwaysOnEnabled`, `common.surveyMegaFamilyGroup` |
+| `extra_flags` | any listed flag, in any section |
+
+Other flags seen (all `true` in the capture), candidates for `extra_flags`: `main.showFamily`
+(МегаСемья tile), `main.showSimOrder`, `main.showOrderEsim`, `main.showNumberTransfer`,
+`main.showHouseGroupProducts`, `main.showCashbackWidget`, `more.showVipProgram`,
+`more.showVacancies`, `more.showSharedOpinion`, `more.showAppGuide`. Not included by default
+because they are, or may be, features someone uses.
+
+### MegaFon endpoint map
+
+All paths under `https://api.megafon.ru/mlk/api/` unless a host is given.
+
+| Endpoint | What it delivers | Handling | Setting |
+|---|---|---|---|
+| `appConfig/wlk` | feature switchboard (above) | flags `true` → `false` | per table above |
+| `promoBanner/availableBanners` | promo banners by `screenId`/`place` (MAIN above stories, FINANCE credit market and partner deposit links, FAMILY, PROMISED) | `banners` → `[]` | `banners` |
+| `banners?screen=<SCREEN>` | per-screen banner slot; `{}` in the capture | any non-empty object → `{}` | `banners` |
+| `promoOffers` | `popUpOffers` over the main screen | `popUpOffers` → `[]` | `popups` |
+| `mfo/assent/form` | "Финансовый помощник" consent pop-up (personal offers from partner banks via Banki.ru); `{"availability":false}` when not shown | `availability` → `false` | `popups` |
+| `personaloffer/availableContent` | `superOffer` ("Вам подарок"), `offersList` (personal offers), `stubBanner`, `game` | `superOffer.availability` → `false`, `offersList` → `[]`; `game.availability` → `false`, `game.gameBubble` → `0` | `offers`; `games` |
+| `partnersoffer/list` | partner offers (bare array: subscriptions, retail discounts, prize draws) | → `[]` | `offers` |
+| `services/availableServices/categoriesList` | `promoOffers` tile on top of the services catalog, then `categoriesList` | `promoOffers` → `[]`, categories kept | `offers` |
+| `onboardings/list?screenId=<id>` | "Добавили новые услуги…" feature tours | `onboardings` → `[]` | `onboarding` |
+| `configuration/buttonBubble` | flat map of "new" bubbles on menu items | every `true` → `false` | `badges` |
+| `superapp/components` | shortcut row `apps[]` (`appId`: `start` Кинотеатр, `money` Деньги, `eve` Ева, `shop` Товары, `additionalNumbers` Доп. номер, `megacinema` МегаКино, `homeInternet` Домашний Интернет) | listed `appId`s dropped | `shortcuts` |
+| `logs/severities` | client log shipping config (`enabled`, `activeSendPeriod: 10`, `batchSize`) | `enabled` → `false` | `analytics` |
+| `lk.megafon.ru/settings.json` | `{app_version, app_environment, track, api_url}`; `track` turns on the Elastic APM RUM agent (`lk.megafon.ru/track/intake/v2/rum/events`) | `track` → `false` | `analytics` |
+| `lk.megafon.ru/<route>` (the page: `index.html`, served for every app route; not `track/` or `public/`) | page shell | a `<style id="adblock-megafon">` hiding `.vpn-notification` / `[data-testid^="VpnNotification"]` is added to `<head>` | `vpn_warning` |
+| `lk.megafon.ru/public/rwlk/vpnNotification.<hash>.js` | the VPN warning component (lazy chunk). It doesn't detect a VPN itself (the app decides before loading it), and closing it is only remembered for the session, so it returns on every launch | its `useState(!!storageGet(SESSION_VPN_KEY))` is rewritten to `useState(!0)`, the "already closed" state in which it renders nothing; only when exactly one match is found | `vpn_warning` |
+| `api.inappstory.ru/v2/feed/<feed>[/<sub>]` (POST) | story feeds: `default` = stories row on the main screen; `*onboarding*` feeds open by themselves on first visit of a screen | `stories` → `[]` (feeds with "onboarding" in the path follow `onboarding`, the rest `stories`) | `stories` / `onboarding` |
+| `api.inappstory.ru/v2/inappmessaging` (POST) | in-app pop-up campaigns, triggered by screen events (seen: "Скидка 10% на тариф" for Умный автоплатёж, event `screen_plusmoney_iam`) | `messages` → `[]` | `popups` |
+
+The page and the chunk get `Accept-Encoding: gzip` and lose `If-None-Match` / `If-Modified-Since` (header rewrites), so the server always sends a full copy for the script to edit; a 304 would make the web view reuse its stored, unedited copy.
+
+InAppStory requests are edited only when `Origin` is `https://lk.megafon.ru` or `Referer` starts
+with it, so other apps that use InAppStory keep their stories even though the host is MITM'd.
+
+Rule set (`analytics: true`): `DOMAIN-SUFFIX,mc.yandex.ru` (Metrica with Webvisor/clickmap: 528
+requests in a two-minute capture), `DOMAIN,abt.s3.yandex.net` (Varioqub script),
+`DOMAIN-SUFFIX,tracker-api.vk-analytics.ru` (MyTracker, native), and
+`URL-REGEX,^https:\/\/lk\.megafon\.ru\/track\/intake\/` (RUM; `settings.json` is the main switch).
+
+### MegaFon module settings
+
+The module declares `#!arguments` (with `#!arguments-desc`). The `[Script]` line passes them to the
+script as one JSON object:
+
+```
+argument={"banners":{{{banners}}},"stories":{{{stories}}},"popups":{{{popups}}},"offers":{{{offers}}},"loans":{{{loans}}},"games":{{{games}}},"onboarding":{{{onboarding}}},"surveys":{{{surveys}}},"badges":{{{badges}}},"vpn_warning":{{{vpn_warning}}},"analytics":{{{analytics}}},"shortcuts":"{{{shortcuts}}}","extra_flags":"{{{extra_flags}}}"}
+```
+
+and `analytics` also picks the rule set:
+
+```
+RULE-SET,https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon/Rules/analytics-{{{analytics}}}.list,REJECT
+```
+
+| Setting | Default | Effect when `true` |
+|---|---|---|
+| `banners` | `true` | promo banners on main, finance, family and promised-payment screens |
+| `stories` | `true` | stories row and stories inside screens (МегаСилы, services) |
+| `popups` | `true` | pop-up offers, InAppStory pop-up campaigns, "Финансовый помощник" consent pop-up |
+| `offers` | `true` | "Вам подарок", personal offers, partner offers, SmartShopping, services-catalog promo tile |
+| `loans` | `true` | "Деньги" tab (loans and credit cards) in Finance. Turn off if you have a loan taken through MegaFon and need to see it there |
+| `games` | `true` | Game Center and game teaser |
+| `onboarding` | `true` | feature tours and onboarding story feeds |
+| `surveys` | `true` | in-app surveys |
+| `badges` | `true` | red "new" bubbles on menu items |
+| `vpn_warning` | `true` | "Отключите виртуальную частную сеть (VPN)" bar shown on every launch (see endpoint map) |
+| `analytics` | `true` | Metrica, MyTracker, Varioqub (rule set), RUM telemetry and log shipping (script) |
+| `shortcuts` | `start+megacinema+shop` | `appId`s to drop from the shortcut row, joined with `+`; empty keeps all |
+| `extra_flags` | empty | extra `appConfig/wlk` flags to switch off, joined with `+` (e.g. `showVacancies+showVipProgram`) |
+
+- Lists use `+` because `#!arguments` itself is split on commas; the script also accepts commas
+  and spaces in a value typed in the app.
+- If the argument isn't valid JSON (`True`/`False` with a capital, a stray quote, placeholders not
+  filled), every switch counts as on and `shortcuts` falls back to its default. Check this first
+  if turning a switch off has no effect.
+- `analytics` must be exactly `true` or `false`: any other value makes the rule-set URL 404, and
+  then no analytics hosts are blocked by this module (the script part still follows the JSON).
+
+### MegaFon deliberately not touched
+
+- `alerts?screen=<SCREEN>` — service notices (blocked number, roaming…), not promo.
+- `tariff/<id>/current`, `preconstructor/megapowers` (МегаСилы tariff constructor), `options/v2/remainders/mini`,
+  balance, payments, autopayments, transfers, expenses — the account itself.
+- `mfo/credits/market` (contents of the "Деньги" marketplace page), `mfo/api/loans/v1/widget`,
+  `mfo/api/installment/limit`, `mfo/credits/v2/info` (existing loan contracts) — `loans` hides the
+  entry points instead.
+- `gameCenter/banner` — hidden through `showGameCenter`; its empty shape is unknown.
+- `personaloffer/availableContent` → `stubBanner` ("Посмотрите, что ещё у нас есть!") — kept so the
+  offers section's empty state renders normally.
+- `devices/widgetTile` (МегаСемья tile), `cashback/v1/history/widget`, `stories/tags` (usage numbers
+  that personalise stories), `user-profile/welcomeInfo/profile`, `push/token`.
+- `logs/v2/accept` is not rejected: log shipping is turned off through `logs/severities`, and the
+  same endpoint receives `index.html`'s white-screen crash reports.
+- `uaas.yandex.ru` (Varioqub experiments for the Metrica counter, 30 calls in the same capture): a shared
+  Yandex host, left out of the rule set. It is called by Metrica's `tag.js`, which no longer loads
+  once `mc.yandex.ru` is blocked.
+- InAppStory `session/open`, `session/update`, `inappmessaging/message-context`, `story?tags=…&favorite=1`.
+
+### MegaFon third-party hosts seen
+
+| Kind | Hosts |
+|---|---|
+| Analytics | `mc.yandex.ru` and numbered `*.mc.yandex.ru` (Metrica, Webvisor, clickmap, `tag_phono.js` call tracking), `abt.s3.yandex.net` + `uaas.yandex.ru` (Varioqub), `tracker-api.vk-analytics.ru`, `ts.` / `ip4.` subdomains (MyTracker) |
+| First-party telemetry | `lk.megafon.ru/track/intake/v2/rum/events` (Elastic APM RUM), `api.megafon.ru/mlk/api/logs/v2/accept` |
+| Stories / pop-ups | `api.inappstory.ru`, `cdn.inappstory.ru` (story covers and fonts) |
+| Promo images | `i.megafon.ru/b/<id>/<id>.jpg`, `moscow.megafon.ru/download/~federal/…` (also serve ordinary icons — not blocked) |
+| Partner links in banners/offers | affiliate click URLs with a per-subscriber `subscriberId` (loan marketplace, deposit offers) |
+
+### MegaFon known risks / to verify on device
+
+1. `{{{analytics}}}` inside the `[Rule]` `RULE-SET` URL: argument substitution outside `[Script]`
+   is documented for `[MITM]` and is how Surge works, but this repo hasn't used it in `[Rule]`
+   before. Check the module's rule set shows `analytics-true.list` loaded. If Shadowrocket shows
+   the literal `{{{analytics}}}` in the URL, hard-code `analytics-true.list` and drop the rule
+   part of the switch.
+2. `URL-REGEX` for `lk.megafon.ru/track/intake/` only works if Shadowrocket applies rule-set URL rules
+   to decrypted requests. `settings.json` `track: false` is the main switch either way.
+3. `banners?screen=<SCREEN>` was `{}` everywhere in the capture; the shape of a non-empty reply is
+   unknown, so the script replies `{}` whenever it isn't empty (unless it looks like an error).
+4. "Вам подарок" is assumed to hide on `superOffer.availability: false`; the component lives in the
+   main bundle, which the capture only has as a cached 304.
+5. Not seen in the capture, chunks loaded: `promoSnackBar`, `headerNotifyCenter`. If one of them shows up,
+   capture with the module on and find the endpoint that feeds it. `vpnNotification` is now handled
+   (`vpn_warning`); if the bar still shows, the chunk's minified `useState` pattern has changed (the
+   script then leaves the chunk alone and only the CSS hides it).
+6. `promoOffers.popUpOffers` was empty in the capture: item shape unknown, the list is emptied as a whole.
+7. First launch after enabling (or after changing a switch) may still show the stored copy
+   (see caching above).
+
+### MegaFon testing
+
+Throwaway Node harness outside the repo (as for [Ozon](#ozon-testing)): it reads the module, fills
+the `#!arguments` defaults into the `argument=` template, checks that the result is valid JSON and
+that both rule-set files exist, runs the script on every captured response the pattern matches,
+and prints the changed JSON paths. On the 4.66.1 capture: 45 responses matched, 24 edited with the
+defaults and only at the paths in the endpoint map; 0 edited with every switch off; InAppStory
+replies with a non-MegaFon `Origin` untouched; empty, non-JSON, `null` and error bodies passed
+through. Also run it after any pattern change: `inappmessaging/message-context`,
+`mfo/assent/sign` and `tariff/*/current` must not match.
+
+### MegaFon privacy
+
+Captures of this app contain the account's and linked accounts' phone numbers and names, balance,
+device id (`X-mlk-Device-Id`), cabinet/session ids, CSRF and refresh tokens in cookies, the
+InAppStory user id and a per-subscriber `subscriberId` in partner links. Never commit captures or
+anything copied from them; keep examples synthetic.
 
 ---
 

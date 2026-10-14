@@ -1,0 +1,27 @@
+#!name=MegaFon — AdBlock
+#!desc=Removes promo banners, stories, pop-ups, personal and partner offers, loan ads, game center, tips, surveys, "new" badges, the VPN warning bar and analytics in the MegaFon app
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+#!arguments=banners:true,stories:true,popups:true,offers:true,loans:true,games:true,onboarding:true,surveys:true,badges:true,vpn_warning:true,analytics:true,shortcuts:start+megacinema+shop,extra_flags:
+#!arguments-desc=Each setting is true or false (lower case), except shortcuts and extra_flags.\n\nbanners — promo banners (main, finance, family, promised payment screens)\nstories — stories row and stories inside screens\npopups — pop-up offers, in-app pop-up campaigns, "Финансовый помощник" consent pop-up\noffers — "Вам подарок", personal offers, partner offers, SmartShopping, promo tile in the services catalog\nloans — "Деньги" tab with loans and credit cards in Finance (turn off if you have a loan taken through MegaFon)\ngames — Game Center and game teasers\nonboarding — "what's new" tips and onboarding stories\nsurveys — in-app surveys\nbadges — red "new" bubbles on menu items\nvpn_warning — "Отключите виртуальную частную сеть (VPN)" bar shown on every launch\nanalytics — Yandex Metrica, MyTracker, Varioqub, app telemetry and log shipping\nshortcuts — shortcut row items to hide, joined with + (start = Кинотеатр, megacinema = МегаКино, shop = Товары; also money, eve, additionalNumbers, homeInternet). Leave empty to keep all\nextra_flags — extra web-app feature flags to switch off, joined with + (e.g. showVacancies+showVipProgram). Leave empty for none
+
+[Rule]
+# Analytics hosts. The list is picked by the analytics setting: analytics-true.list blocks,
+# analytics-false.list holds one rule that never matches.
+RULE-SET,https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon/Rules/analytics-{{{analytics}}}.list,REJECT
+
+[Header Rewrite]
+# Ask for gzip only on scripted endpoints so the body stays readable by the script
+^https:\/\/(api\.megafon\.ru\/mlk\/api\/(appConfig\/wlk|promoBanner\/availableBanners|banners|promoOffers|mfo\/assent\/form|personaloffer\/availableContent|partnersoffer\/list|services\/availableServices\/categoriesList|onboardings\/list|configuration\/buttonBubble|superapp\/components|logs\/severities)|lk\.megafon\.ru\/settings\.json|api\.inappstory\.ru\/v2\/(feed\/[\w-]+(\/[\w-]+)?|inappmessaging))(\?|$) header-replace Accept-Encoding gzip
+# Page (index.html for every app route) and the VPN warning chunk: always fetch a full copy so the
+# script can edit it; a 304 would make the web view reuse its stored, unedited copy
+^https:\/\/lk\.megafon\.ru\/((?!track\/|public\/)[\w\/-]*|public\/rwlk\/vpnNotification\.[0-9a-f]+\.js)(\?|$) header-replace Accept-Encoding gzip
+^https:\/\/lk\.megafon\.ru\/((?!track\/|public\/)[\w\/-]*|public\/rwlk\/vpnNotification\.[0-9a-f]+\.js)(\?|$) header-del If-None-Match
+^https:\/\/lk\.megafon\.ru\/((?!track\/|public\/)[\w\/-]*|public\/rwlk\/vpnNotification\.[0-9a-f]+\.js)(\?|$) header-del If-Modified-Since
+
+[Script]
+megafon = type=http-response,pattern=^https:\/\/(api\.megafon\.ru\/mlk\/api\/(appConfig\/wlk|promoBanner\/availableBanners|banners|promoOffers|mfo\/assent\/form|personaloffer\/availableContent|partnersoffer\/list|services\/availableServices\/categoriesList|onboardings\/list|configuration\/buttonBubble|superapp\/components|logs\/severities)|lk\.megafon\.ru\/settings\.json|api\.inappstory\.ru\/v2\/(feed\/[\w-]+(\/[\w-]+)?|inappmessaging))(\?|$),requires-body=1,max-size=-1,timeout=10,argument={"banners":{{{banners}}},"stories":{{{stories}}},"popups":{{{popups}}},"offers":{{{offers}}},"loans":{{{loans}}},"games":{{{games}}},"onboarding":{{{onboarding}}},"surveys":{{{surveys}}},"badges":{{{badges}}},"vpn_warning":{{{vpn_warning}}},"analytics":{{{analytics}}},"shortcuts":"{{{shortcuts}}}","extra_flags":"{{{extra_flags}}}"},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon/Script/megafon.js
+megafon-page = type=http-response,pattern=^https:\/\/lk\.megafon\.ru\/((?!track\/|public\/)[\w\/-]*|public\/rwlk\/vpnNotification\.[0-9a-f]+\.js)(\?|$),requires-body=1,max-size=-1,timeout=10,argument={"banners":{{{banners}}},"stories":{{{stories}}},"popups":{{{popups}}},"offers":{{{offers}}},"loans":{{{loans}}},"games":{{{games}}},"onboarding":{{{onboarding}}},"surveys":{{{surveys}}},"badges":{{{badges}}},"vpn_warning":{{{vpn_warning}}},"analytics":{{{analytics}}},"shortcuts":"{{{shortcuts}}}","extra_flags":"{{{extra_flags}}}"},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon/Script/megafon.js
+
+[MITM]
+hostname = %APPEND% api.megafon.ru, lk.megafon.ru, api.inappstory.ru

@@ -1,0 +1,6 @@
+# MegaFon analytics hosts, loaded by Megafon/megafon.sgmodule when analytics is true.
+# One rule per line, no policy: the module's RULE-SET line adds REJECT.
+DOMAIN-SUFFIX,mc.yandex.ru
+DOMAIN,abt.s3.yandex.net
+DOMAIN-SUFFIX,tracker-api.vk-analytics.ru
+URL-REGEX,^https:\/\/lk\.megafon\.ru\/track\/intake\/
