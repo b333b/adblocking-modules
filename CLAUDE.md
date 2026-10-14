@@ -76,8 +76,11 @@ Yandex/yandex-maps.sgmodule        Yandex Maps module
 Yandex/yandex-go.sgmodule          Yandex Go module
 Yandex/Script/yandex-maps.js       Yandex Maps script (protobuf + JSON)
 Yandex/Script/yandex-go.js         Yandex Go script
+Megafon/Script/                    Megafon (no module yet; .gitkeep only)
+Dixy/Script/                       Dixy (no module yet; .gitkeep only)
 ```
 
+- Empty folders hold a `.gitkeep` (git doesn't track empty folders); delete it once real files land there.
 - One folder per vendor: `<Vendor>/`. Modules (`*.sgmodule`) sit in the vendor folder; the
   scripts they load sit in `<Vendor>/Script/`.
 - Module `script-path` values use the raw URL on `main`:
