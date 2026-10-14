@@ -132,8 +132,8 @@ Facts that apply to every module.
   `analytics-{{{analytics}}}.list`: the rule set didn't load). Rules can't be switched by a
   module setting; keep them always on.
 - `#!arguments` must not end with an empty value (`…,extra_flags:`): Shadowrocket mishandles it
-  (seen on device with MegaFon). Give the last argument a non-empty default. Ozon Marketplace's
-  module still ends with `extra:` and should get a default too.
+  (seen on device with MegaFon). Give the last argument a non-empty default (Ozon Marketplace uses the placeholder
+  `extra:Add_components_here`).
 - All scripts fail open: unexpected shape → pass the original body through (`$done({})`), never a
   half-edited body.
 
@@ -662,7 +662,7 @@ argument={"ad_widgets":{{{ad_widgets}}},"curtains":{{{curtains}}},"grid_ad_banne
 | `curtains` | `true` | drop `curtain` pop-up banners |
 | `grid_ad_banners` | `true` | drop "Реклама" banner tiles inside result grids |
 | `sponsored_products` | `true` | drop sponsored product tiles inside result grids |
-| `extra` | empty | extra component names to drop, comma, `+` or space separated |
+| `extra` | `Add_components_here` (placeholder; matches no widget, so it drops nothing) | extra component names to drop, comma, `+` or space separated. `#!arguments-desc` lists the component names seen in captures (`banner`, `textBlock`, `cellList`, `twoCards`, `installment`, `bigPromoPDP`, `feedbackTile`, …) with the widget names they appear under. Don't add `tileGrid2`, `tileGridMedium`, `tileGridMini` or `tileScroll` (real products), and be careful with `pixel` (can drive cart alerts) |
 
 - Widgets whose `name` starts with `rtb.` are dropped even with `ad_widgets: false`.
 - With both grid switches off, result grids are not parsed at all.
