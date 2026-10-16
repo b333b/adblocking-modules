@@ -51,7 +51,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
-| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka shows errors when it is MITM'd; Lavka is not handled) |
+| Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka answers with a captcha when Shadowrocket MITMs it, so Lavka is [not handled](#go-applavkayandexnet-lavka-web-app)) |
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
@@ -919,7 +919,7 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Scooters | Promo tiles (points giveaways, subscription and minute-package upsells, story banners), promo block | Scooters screen filtered; nearest scooter, QR scan and menu kept |
 | Market | Hero ad carousel, "Реклама" tiles, sponsored product scrollboxes, ad banners and incuts in feeds and search, banner carousels on promo pages, header promo strip, fortune wheel entries and daily-reward pop-up, coins overlay in the video feed, FOMO sale badge, ad and onboarding pop-ups, bank card / Split / credit upsells in cart and profile, referral promos, "leave a review" nags | Stylesheet injected into Market pages; daily-reward response neutralised |
 | Eats | Ad pop-ups (main page, department and pharmacy screens), brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
-| Lavka | Sponsored video banners, advertiser stories (erid), "personal discounts" floating button | `upsale/media-feed` and `informers` filtered; products stay. **Inactive**: no MITM host and no script line, because Lavka errors when MITM'd |
+| Lavka | **Nothing**: Shadowrocket can't MITM Lavka (it answers with a captcha), so its ads stay: in-order hero carousel, Market hero banners, sponsored tiles, video banners, advertiser stories, "personal discounts" button | No MITM host, no script line; the `upsale/media-feed` and `informers` handlers in the script are inactive. See [Lavka](#go-applavkayandexnet-lavka-web-app) |
 | Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, video player logs, Firebase Analytics | Rules / URL rewrites |
 
 Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery products and Market's organic product listings are not touched.
@@ -1002,7 +1002,24 @@ In any `typed_experiments.items`: `new_year_splash_2025`, `dynamic_splash_screen
 
 #### Go: app.lavka.yandex.net (Lavka web app)
 
-Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[MITM]` hostnames on purpose, because **Lavka throws errors when its traffic is MITM'd** (with or without the script). The `yandexgo-lavka` script line was removed from the module too; the Lavka handlers (`handleLavkaMediaFeed`, `handleLavkaInformers`) remain in the script but nothing routes to them. Don't add the host back unless the errors are solved; the notes below are kept for that case (re-adding needs both the MITM host and a `yandexgo-lavka` line for `.../lavka/v1/api/v1/(upsale/media-feed|informers)`).
+Not handled: Shadowrocket can't MITM Lavka (confirmed 2026-10-16).
+
+- With only `app.lavka.yandex.net` added to `[MITM]` (no wildcards, no Lavka script), Lavka answers with Yandex SmartCaptcha (`/showcaptcha`, `/checkcaptcha`, `/captchaimage` on `app.lavka.yandex.net`). It triggers on data endpoints such as `api/v1/layout` and `upsale/media-feed`, and solving it doesn't stick. Removing the host fixes it.
+- The request headers Shadowrocket forwards are identical to ProxyPin's, and ProxyPin-decrypted Lavka never got a captcha. The likely trigger is Shadowrocket's outbound TLS fingerprint, which a module can't change.
+- So the host stays out of `[MITM]` and the module has no `yandexgo-lavka` script line. The Lavka handlers in the script (`handleLavkaMediaFeed`, `handleLavkaInformers`) stay inactive: nothing routes to them. Rules can't help either: an HTTPS path is only visible once decrypted, and rejecting the whole host breaks Lavka.
+
+Consequence: Lavka ads stay. Among them:
+
+| Ad | Endpoint | Client on error |
+|---|---|---|
+| In-order hero carousel: about 10 auction-sold banners, images from `avatars.mds.yandex.net/get-market-adv/` and `/get-direct/`, rendered by the lazy chunk `yandex-urbanads-sdk-carousel` from `yastatic.net/s3/grocery-superapp/` | `POST /lavka/v1/adv/v1/banners` (body `source: tracking`, `block: LavkaTracking`) | `load_urban_ads_creatives_error` → `{result: []}`, no ads |
+| Market hero banners | `adv/v1/get-banners` | `load_market_hero_banners_error` → `{marketBanners: []}`, no ads |
+| Sponsored tiles | `orders-tracking/v1/informers` | |
+| Sponsored video banners, advertiser stories, "personal discounts" button | `upsale/media-feed`, `informers` (below) | |
+
+Since the client falls back to no ads when `adv/v1/banners` or `adv/v1/get-banners` fails, a MITM-capable client would only need a plain reject on those two paths.
+
+Notes on the inactive handlers, kept in case Lavka can be MITM'd again (that needs both the MITM host and a `yandexgo-lavka` line for `.../lavka/v1/api/v1/(upsale/media-feed|informers)`):
 
 - `POST .../lavka/v1/api/v1/upsale/media-feed` — `items[]` (goods), `media_items[]`, `layout_items[]` (`{type, id}`). Sponsored: `adv_tag_info` (erid, advertiser), `type: video_banner` (linked via `advertisement_id` ↔ layout `banner`), story informers (`informer_id` ↔ layout `story`).
 - `POST .../lavka/v1/api/v1/informers` — floating "personal_discounts" button → dropped.
@@ -1029,7 +1046,7 @@ Inactive since Oct 2026: `app.lavka.yandex.net` was removed from the module's `[
 - Afisha web view (`afisha.yandex.ru`, opened from the tile with `promo_mode=normal`): lazy chunks `PromoBottomSheet`, `PromoFullscreen-component`, `ChatBotWidget` loaded but their data source was not seen (not in `api/graphql` responses); likely AdFox-driven and gone with the rules — unverified. Event `promoImage*`/`promoVideo*` fields in graphql are event artwork, not ads.
 - Service landings opened deliberately, not touched: `care.yandex.ru/go/home` (insurance "unique selling propositions" cards), `rentacar.yandex.ru` (own `promoBlocks`, e.g. motorcycle promo), Eats pharmacy `pharmacies-media/v1/articles` (health journal cards).
 - Not blocked: `api.browser.yandex.ru/uma_proto` (browser-engine telemetry; would need an extra MITM host).
-- Lavka: find a way to filter its ads without the MITM errors (see the Lavka section), or also drop the now-unused Lavka handlers from the script.
+- Lavka: not handled, because Shadowrocket's MITM triggers a captcha (see the Lavka section). If that ever changes, a reject on `adv/v1/banners` and `adv/v1/get-banners` covers the hero carousels; otherwise the unused Lavka handlers could be dropped from the script.
 - Location-permission bar fix is experimental (on since Oct 2026) — see next section.
 
 ### Go location-permission bar (experimental fix)
