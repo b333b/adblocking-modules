@@ -14,21 +14,33 @@
 // requests are only edited when they come from the MegaFon web app (Origin/Referer
 // lk.megafon.ru), so other apps that use InAppStory are left alone.
 //
-// Settings come from the module's #!arguments as one JSON object, e.g.
-//   argument={"banners":true,...,"sections":"mega5g+megafamily+cashback+roaming","shortcuts":"start+megacinema+shop","extra_flags":"showVacancies"}
-// Every switch is on unless it is false. If the argument is not valid JSON, all switches count
-// as on and the list defaults below are used. Unexpected response shapes are passed through untouched.
+// Settings arrive from the module as `key:value` pairs joined with &, e.g.
+//   argument=banners:true&...&sections:mega5g+megafamily&shortcuts:start+shop&extra_flags:showVacancies
+// Commas are what Shadowrocket uses to separate the parameters of a script line, so the
+// argument must never contain one; lists are joined with +. A JSON object is still accepted.
+// A switch is off only when it says false, 0, no or off (any case). A missing key or an
+// unsubstituted {{{placeholder}}} counts as on, and a list then falls back to the defaults
+// below. Unexpected response shapes are passed through untouched.
 
 const DEFAULT_SHORTCUTS = ['start', 'megacinema', 'shop'];
 const DEFAULT_SECTIONS = ['mega5g', 'megafamily', 'cashback', 'roaming'];
 const DEFAULT_EXTRA_FLAGS = ['showVacancies'];
 
-const arg = typeof $argument !== 'undefined' ? String($argument) : '';
+const arg = typeof $argument !== 'undefined' && $argument !== null ? String($argument) : '';
 let S = null;
 try { S = JSON.parse(arg); } catch (e) {}
 if (!S || typeof S !== 'object' || Array.isArray(S)) S = null;
+if (!S && arg.indexOf(':') >= 0) {
+  S = {};
+  arg.split(/[&;\n]+/).forEach((pair) => {
+    const i = pair.indexOf(':');
+    const v = i > 0 ? pair.slice(i + 1).trim() : '';
+    if (i > 0 && !/^\{\{\{.*\}\}\}$/.test(v)) S[pair.slice(0, i).trim()] = v;
+  });
+}
 
-const on = (k) => (S ? S[k] !== false && S[k] !== 'false' && S[k] !== 0 : true);
+const off = (v) => v === false || v === 0 || (typeof v === 'string' && /^(false|0|no|off)$/i.test(v.trim()));
+const on = (k) => (S ? !off(S[k]) : true);
 const list = (k, def) => {
   if (!S || typeof S[k] !== 'string') return def;
   return S[k].split(/[+,\s]+/).filter((t) => /^[A-Za-z][A-Za-z0-9_-]*$/.test(t));

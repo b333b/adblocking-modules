@@ -56,7 +56,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | App | Last tested on | Written | Status |
 |---|---|---|---|
 | Avito | 230.1 | from scratch (not a fork) | working |
-| MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | new, not yet tested on device, see [known risks](#megafon-known-risks--to-verify-on-device) |
+| MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | working, see [known risks](#megafon-known-risks--to-verify-on-device) |
 | Ozon Bank | — | from scratch | working |
 | Ozon Marketplace | — | from scratch | new |
 | Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
@@ -135,9 +135,9 @@ Facts that apply to every module.
   commas, so a comma inside the argument cuts it short and turns the rest of the line into junk
   parameters. That can leave the script registered without a usable `script-path`; every matching
   request then stalls until `timeout` and the app seems not to open. Pass settings as `key:value`
-  pairs joined with `&` (Ozon Bank, Ozon Marketplace), and have the script treat anything not
-  explicitly off as on, so a cut or unsubstituted argument falls back to the defaults. MegaFon
-  still passes a JSON object, see [its known risks](#megafon-known-risks--to-verify-on-device).
+  pairs joined with `&` (MegaFon, Ozon Bank, Ozon Marketplace; MegaFon and Ozon Marketplace
+  passed a JSON object before October 2026), and have the script treat anything not explicitly off as on, so a cut or
+  unsubstituted argument falls back to the defaults.
 - `#!arguments` must not end with an empty value (`…,extra_flags:`): Shadowrocket mishandles it
   (seen on device with MegaFon). Give the last argument a non-empty default (Ozon Marketplace uses the placeholder
   `extra:Add_components_here`).
@@ -298,7 +298,7 @@ The script only turns `true` into `false`; it never adds or removes keys.
 | `surveys` | `more.surveyAlwaysOnEnabled`, `common.surveyMegaFamilyGroup` |
 | `sections` → `megafamily` | `main.showMyNumbers` (the `main-my-numbers` block), `main.showFamily` (its МегаСемья tile) |
 | `sections` → `cashback` | `main.showCashbackWidget` |
-| `extra_flags` | any listed flag, in any section (default `showVacancies`) |
+| `extra_flags` | any listed flag, in any section (none by default) |
 
 All other flags that were `true` in the capture are listed for `extra_flags` in the module's
 `#!arguments-desc`, grouped by section, including `main.isEsimExchangeOtpEnabled` (the SMS-code
@@ -382,10 +382,11 @@ class is known, add it to `SECTION_CSS.roaming` in the script and drop the headi
 ### MegaFon module settings
 
 The module declares `#!arguments` (with `#!arguments-desc`). Both `[Script]` lines (`megafon`, `megafon-page`) pass them to the
-script as the same JSON object; keep the two `argument=` values identical:
+script as `key:value` pairs joined with `&` (never commas, see
+[Shadowrocket reference](#shadowrocket-reference)); keep the two `argument=` values identical:
 
 ```
-argument={"banners":{{{banners}}},"stories":{{{stories}}},"popups":{{{popups}}},"offers":{{{offers}}},"loans":{{{loans}}},"games":{{{games}}},"onboarding":{{{onboarding}}},"surveys":{{{surveys}}},"badges":{{{badges}}},"vpn_warning":{{{vpn_warning}}},"for_me_tab":{{{for_me_tab}}},"analytics":{{{analytics}}},"sections":"{{{sections}}}","shortcuts":"{{{shortcuts}}}","extra_flags":"{{{extra_flags}}}"}
+argument=banners:{{{banners}}}&stories:{{{stories}}}&popups:{{{popups}}}&offers:{{{offers}}}&loans:{{{loans}}}&games:{{{games}}}&onboarding:{{{onboarding}}}&surveys:{{{surveys}}}&badges:{{{badges}}}&vpn_warning:{{{vpn_warning}}}&for_me_tab:{{{for_me_tab}}}&analytics:{{{analytics}}}&sections:{{{sections}}}&shortcuts:{{{shortcuts}}}&extra_flags:{{{extra_flags}}}
 ```
 
 The analytics rule set is not switchable (placeholders don't work in `[Rule]`, see
@@ -409,15 +410,18 @@ RULE-SET,https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon
 | `vpn_warning` | `true` | "Отключите виртуальную частную сеть (VPN)…" bar shown on every launch |
 | `for_me_tab` | `true` | "Для меня" tab in the bottom menu |
 | `analytics` | `true` | RUM telemetry and log shipping (script). Metrica, MyTracker and Varioqub are blocked by the rule set regardless |
-| `sections` | `mega5g+megafamily+cashback+roaming` | main-screen ("Связь") sections to hide; available: `mega5g`, `megafamily`, `cashback`, `roaming` |
-| `shortcuts` | `start+megacinema+shop` | service-shelf `appId`s to drop; available: `start`, `megacinema`, `shop`, `money`, `eve`, `additionalNumbers`, `homeInternet` (`money` is already hidden by the web app while `finance.showMfo` is false, i.e. while `loans` is on) |
-| `extra_flags` | `showVacancies` | extra `appConfig/wlk` flags to switch off; the full list is in `#!arguments-desc` |
+| `sections` | `Add_components_here` (placeholder, hides nothing) | main-screen ("Связь") sections to hide; available: `mega5g`, `megafamily`, `cashback`, `roaming` |
+| `shortcuts` | `Add_components_here` (placeholder, drops nothing) | service-shelf `appId`s to drop; available: `start`, `megacinema`, `shop`, `money`, `eve`, `additionalNumbers`, `homeInternet` (`money` is already hidden by the web app while `finance.showMfo` is false, i.e. while `loans` is on) |
+| `extra_flags` | `Add_components_here` (placeholder, switches nothing off) | extra `appConfig/wlk` flags to switch off; the full list is in `#!arguments-desc` |
 
-- Lists use `+` because `#!arguments` itself is split on commas; the script also accepts commas
-  and spaces in a value typed in the app.
-- If the argument isn't valid JSON (`True`/`False` with a capital, a stray quote, placeholders not
-  filled), every switch counts as on and the lists fall back to their defaults. Check this first
+- Lists use `+` (spaces also work), never commas: `#!arguments` itself is split on commas, and a
+  comma typed into a value would cut the script line.
+- A switch is off only when its value is `false`, `0`, `no` or `off`, in any case (a `False`
+  capitalised by the iOS keyboard works). A missing key or an unsubstituted placeholder counts as
+  on, and a list then falls back to the script's own defaults (`mega5g+megafamily+cashback+roaming`,
+  `start+megacinema+shop`, `showVacancies`). An empty list hides nothing. Check the argument first
   if turning a switch off has no effect.
+- A JSON object (the format before October 2026) is still accepted.
 - Every `#!arguments` default is non-empty (see [Shadowrocket reference](#shadowrocket-reference));
   a list can still be emptied in the app's module settings.
 
@@ -474,22 +478,23 @@ RULE-SET,https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon
      hides the bar. Check with `curl` that `useState)(!!(0,` still occurs exactly once.
 8. First launch after enabling (or after changing a switch) may still show the stored copy
    (see caching above).
-9. The `argument=` is a JSON object, so it contains commas, which Shadowrocket uses to split a
-   script line (see [Shadowrocket reference](#shadowrocket-reference)). Expect the settings to be
-   ignored (a cut argument is invalid JSON, so the script uses the defaults) or, worse, the app to
-   hang on launch. If either shows up, move the module to `key:value` pairs joined with `&` like
-   the Ozon modules (needs a script change).
 
 ### MegaFon testing
 
 Throwaway Node harness outside the repo (as for [Ozon](#ozon-testing)): it reads the module, fills
-the `#!arguments` defaults into the `argument=` template, checks that the result is valid JSON and
-that both rule-set files exist, runs the script on every captured response the pattern matches,
+the `#!arguments` defaults into the `argument=` template, checks that the script line splits
+cleanly on commas (no comma in the argument) and that both rule-set files exist, runs the script on every captured response the pattern matches,
 and prints the changed JSON paths. On the 4.66.1 capture: 47 responses matched, 26 edited with the
 defaults and only at the paths in the endpoint map; 0 edited with every switch off; InAppStory
 replies with a non-MegaFon `Origin` untouched; empty, non-JSON, `null` and error bodies passed
 through. Also run it after any pattern change: `inappmessaging/message-context`,
 `mfo/assent/sign` and `tariff/*/current` must not match.
+
+The switch from a JSON argument to `key:value` pairs (October 2026) was checked differentially:
+the new script with `key:value` arguments and the previous script with the equivalent JSON gave
+identical output on 300 setting combinations × 21 synthetic responses (every endpoint above,
+the page and the VPN chunk); unsubstituted placeholders, an empty or cut argument fall back to
+the same defaults as before.
 
 A second harness covers `megafon-page`: both script lines carry the same argument and script path,
 the header rewrites use the same pattern, routes like `/`, `/main`, `/inapp/...` and the chunk
