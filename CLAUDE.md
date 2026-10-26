@@ -14,7 +14,7 @@ one top-level section per app.
 | Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
 |---|---|---|---|---|---|
 | [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
-| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
+| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
 | [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
 | [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
 | [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
@@ -48,7 +48,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 |---|---|---|---|---|---|
 | Avito | `online.anero.app` | [`Avito/avito.sgmodule`](Avito/avito.sgmodule) | [`Avito/Script/avito.js`](Avito/Script/avito.js) | `avito-ads` | `app.avito.ru`, `www.avito.ru`, `stats.avito.ru` |
 | MegaFon | — | [`Megafon/megafon.sgmodule`](Megafon/megafon.sgmodule) | [`Megafon/Script/megafon.js`](Megafon/Script/megafon.js); rule set [`Megafon/Rules/analytics-true.list`](Megafon/Rules/analytics-true.list) | `megafon` (API JSON), `megafon-page` (page + VPN chunk) | `api.megafon.ru`, `lk.megafon.ru`, `api.inappstory.ru` |
-| Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-banners-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
+| Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-bank-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
 | Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka answers with a captcha when Shadowrocket MITMs it, so Lavka is [not handled](#go-applavkayandexnet-lavka-web-app)) |
@@ -131,6 +131,13 @@ Facts that apply to every module.
   work in a `[Rule]` `RULE-SET` URL (tested on device with MegaFon's
   `analytics-{{{analytics}}}.list`: the rule set didn't load). Rules can't be switched by a
   module setting; keep them always on.
+- **`argument=` must never contain a comma.** Shadowrocket splits a script line's parameters on
+  commas, so a comma inside the argument cuts it short and turns the rest of the line into junk
+  parameters. That can leave the script registered without a usable `script-path`; every matching
+  request then stalls until `timeout` and the app seems not to open. Pass settings as `key:value`
+  pairs joined with `&` (Ozon Bank, Ozon Marketplace), and have the script treat anything not
+  explicitly off as on, so a cut or unsubstituted argument falls back to the defaults. MegaFon
+  still passes a JSON object, see [its known risks](#megafon-known-risks--to-verify-on-device).
 - `#!arguments` must not end with an empty value (`…,extra_flags:`): Shadowrocket mishandles it
   (seen on device with MegaFon). Give the last argument a non-empty default (Ozon Marketplace uses the placeholder
   `extra:Add_components_here`).
@@ -467,6 +474,11 @@ RULE-SET,https://raw.githubusercontent.com/b333b/adblocking-modules/main/Megafon
      hides the bar. Check with `curl` that `useState)(!!(0,` still occurs exactly once.
 8. First launch after enabling (or after changing a switch) may still show the stored copy
    (see caching above).
+9. The `argument=` is a JSON object, so it contains commas, which Shadowrocket uses to split a
+   script line (see [Shadowrocket reference](#shadowrocket-reference)). Expect the settings to be
+   ignored (a cut argument is invalid JSON, so the script uses the defaults) or, worse, the app to
+   hang on launch. If either shows up, move the module to `key:value` pairs joined with `&` like
+   the Ozon modules (needs a script change).
 
 ### MegaFon testing
 
@@ -560,33 +572,55 @@ Key structures:
 
 ### Ozon Bank: what is removed and how
 
-| Block | Handled by |
-| --- | --- |
-| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + `banners`/`creatives` in the page data + CSS `[data-testid="banners-on-main"]` (the carousel container); widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays |
-| Banner in operations history | `MARKETING_LAST_OPERATIONS_BANNER` → `data: null` |
-| "Карта с выгодой…" / "Заказать бесплатно" | page: empty `MFCardState@ca-traffic` body in **both** copies + CSS `[data-testid="order-plastic-v1"]` |
-| "Ozon Карта в корзине" | same module: CSS `[data-testid="plastic-in-cart"]` |
-| "Новый счёт или продукт" next to the balance | `NEW_PRODUCT_BUTTON` → `data: null` |
-| "Новый счёт или продукт" card in the wallet row | CSS `[data-testid="new-product-block"]` |
-| Order-card prompts / the whole card-state slot | CSS `[data-testid="mfe-card-state"]` (the ca-traffic slot holding the card offer, "Ozon Карта в корзине" and order-card prompts). `MAIN_ACCOUNT_ACTIONS` (its `actionButton.type` is `ORDER_CARD`) is no longer nulled by default; see below |
-| "Выгода от партнёров", "Розыгрыши и акции" | `MFBonuses`: empty the promo collections above + CSS `[data-testid="priority-banner"]` |
+| Block | Handled by | Setting |
+| --- | --- | --- |
+| Banner carousel | page: empty the `MFPromoBanners*@promo` rendered body + `banners`/`creatives` in the page data + CSS `[data-testid="banners-on-main"]` (the carousel container); widget tree: `MARKETING_BANNER_SLIDER` → `data: null`; `banners/list` → empty arrays | `carousel` |
+| Banner in operations history | `MARKETING_LAST_OPERATIONS_BANNER` → `data: null` | `operations_banner` |
+| "Карта с выгодой…" / "Заказать бесплатно" | page: empty `MFCardState@ca-traffic` body in **both** copies + CSS `[data-testid="order-plastic-v1"]` | `card_offer` |
+| "Ozon Карта в корзине" | same module: CSS `[data-testid="plastic-in-cart"]` | `card_offer` |
+| The whole card-state slot (card offer, "Ozon Карта в корзине", order-card prompts) | CSS `[data-testid="mfe-card-state"]` (the ca-traffic slot) | `card_offer` |
+| Order-card section next to the cards | `MAIN_ACCOUNT_ACTIONS` → `data: null` (its `actionButton.type` is `ORDER_CARD`) | `order_card` |
+| "Новый счёт или продукт" next to the balance | `NEW_PRODUCT_BUTTON` → `data: null` | `new_product` |
+| "Новый счёт или продукт" card in the wallet row | CSS `[data-testid="new-product-block"]` | `new_product` |
+| "Выгода от партнёров", "Розыгрыши и акции" | `MFBonuses`: empty the promo collections above + CSS `[data-testid="priority-banner"]` | `loyalty_promos` |
 
 Rendered by the main module (which also carries the balance) → hide with CSS.
 Rendered by a module of its own → empty that module's body.
 Delivered as widget data → null the widget.
 
-Module script entries: `ozon-banners-page` (`/m/lk/main`), `ozon-banners-main`
-(`MFEMainMobile`, `api/mainPage`, `api/updateMainPage`), `ozon-banners-loyalty` (`MFBonuses`),
-`ozon-banners-list` (`banners/list`). Widget types are configured on the `ozon-banners-main` line, joined with `+`:
+Module script entries: `ozon-bank-page` (`/m/lk/main`), `ozon-bank-main`
+(`MFEMainMobile`, `api/mainPage`, `api/updateMainPage`), `ozon-bank-loyalty` (`MFBonuses`),
+`ozon-bank-list` (`banners/list`). They were named `ozon-banners-*` before October 2026.
+
+`MAIN_ACCOUNT_ACTIONS` is named for actions in general; if Ozon ever puts something useful
+there, narrow the script to clear `actionButton` only when its `type` is `ORDER_CARD`.
+
+### Ozon Bank: module settings
+
+The module declares `#!arguments` (with `#!arguments-desc`). All four `[Script]` lines pass the
+same argument to the script, as `key:value` pairs joined with `&` (never commas, see
+[Shadowrocket reference](#shadowrocket-reference)); keep the four identical:
 
 ```
-argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER+NEW_PRODUCT_BUTTON
+argument=carousel:{{{carousel}}}&card_offer:{{{card_offer}}}&operations_banner:{{{operations_banner}}}&new_product:{{{new_product}}}&order_card:{{{order_card}}}&loyalty_promos:{{{loyalty_promos}}}
 ```
 
-`MAIN_ACCOUNT_ACTIONS` was in this list before and has been dropped: the order-card section is
-now hidden with the `mfe-card-state` CSS instead. To null it again, append `+MAIN_ACCOUNT_ACTIONS`.
-It is named for actions in general; if Ozon ever puts something useful there, narrow the script
-to clear `actionButton` only when its `type` is `ORDER_CARD`.
+| Setting | Default | Effect when `true` |
+| --- | --- | --- |
+| `carousel` | `true` | banner carousel: page body and data, `MARKETING_BANNER_SLIDER`, `banners/list`, CSS `banners-on-main` |
+| `card_offer` | `true` | `MFCardState@ca-traffic` body emptied; CSS `mfe-card-state`, `order-plastic-v1`, `plastic-in-cart` |
+| `operations_banner` | `true` | `MARKETING_LAST_OPERATIONS_BANNER` |
+| `new_product` | `true` | `NEW_PRODUCT_BUTTON`, CSS `new-product-block` |
+| `order_card` | `true` | `MAIN_ACCOUNT_ACTIONS` (order-card section next to the cards) |
+| `loyalty_promos` | `true` | "Выгода" promo collections in `MFBonuses`, CSS `priority-banner` |
+
+- A switch is off only when its value is `false`, `0`, `no`, `off` or empty. A missing key or an
+  unsubstituted placeholder counts as on, so a broken argument falls back to the defaults. Check
+  the argument first if turning a switch off has no effect.
+- Caching headers are stripped on every scripted response, whatever the switches.
+- A JSON object is also accepted. A legacy `+`-joined list of widget types
+  (`argument=MARKETING_BANNER_SLIDER+NEW_PRODUCT_BUTTON`) still works, but then only nulls those
+  widgets: page edits, CSS, `banners/list` and `MFBonuses` are all off.
 
 ### Ozon Bank debug workflow
 
@@ -605,7 +639,10 @@ to clear `actionButton` only when its `type` is `ORDER_CARD`.
 3. Compare the newest entry's timestamp with the launch. Older means nothing was fetched.
 
 The debug script lags behind the bank script (see the table above); while debugging, the
-"Выгода" screen and in-app navigation back to main are not cleaned.
+"Выгода" screen and in-app navigation back to main are not cleaned. It also ignores the
+[module settings](#ozon-bank-module-settings): it reads the old `+`-joined argument
+(`MARKETING_BANNER_SLIDER+mode:…+order:…`) and, given the new one, falls back to the carousel
+widget only.
 
 ### Ozon Marketplace
 
@@ -629,7 +666,7 @@ nested inside another widget's `placeholders`, and deletes their `widgetStates` 
 | `entryBannerWidget` | `regulardraw.*` prize-draw entry banner |
 | `curtain` | pop-up curtain banners (separate `curtains` switch) |
 
-Any widget whose `name` starts with `rtb.` is dropped whatever its component is.
+Any widget whose `name` starts with `rtb.` is dropped whatever its component is, while `ad_widgets` is on.
 
 #### Ozon Marketplace: ads inside result grids
 
@@ -650,10 +687,11 @@ fields changed.
 #### Ozon Marketplace: module settings
 
 The module declares `#!arguments` (with `#!arguments-desc`), so each switch can be changed in the
-module's settings in Shadowrocket. The `[Script]` line passes them to the script as one JSON object:
+module's settings in Shadowrocket. The `[Script]` line passes them to the script as `key:value`
+pairs joined with `&` (never commas, see [Shadowrocket reference](#shadowrocket-reference)):
 
 ```
-argument={"ad_widgets":{{{ad_widgets}}},"curtains":{{{curtains}}},"grid_ad_banners":{{{grid_ad_banners}}},"sponsored_products":{{{sponsored_products}}},"extra":"{{{extra}}}"}
+argument=ad_widgets:{{{ad_widgets}}}&curtains:{{{curtains}}}&grid_ad_banners:{{{grid_ad_banners}}}&sponsored_products:{{{sponsored_products}}}&extra:{{{extra}}}
 ```
 
 | Setting | Default | Effect when `true` |
@@ -662,14 +700,14 @@ argument={"ad_widgets":{{{ad_widgets}}},"curtains":{{{curtains}}},"grid_ad_banne
 | `curtains` | `true` | drop `curtain` pop-up banners |
 | `grid_ad_banners` | `true` | drop "Реклама" banner tiles inside result grids |
 | `sponsored_products` | `true` | drop sponsored product tiles inside result grids |
-| `extra` | `Add_components_here` (placeholder; matches no widget, so it drops nothing) | extra component names to drop, comma, `+` or space separated. `#!arguments-desc` lists the component names seen in captures (`banner`, `textBlock`, `cellList`, `twoCards`, `installment`, `bigPromoPDP`, `feedbackTile`, …) with the widget names they appear under. Don't add `tileGrid2`, `tileGridMedium`, `tileGridMini` or `tileScroll` (real products), and be careful with `pixel` (can drive cart alerts) |
+| `extra` | `Add_components_here` (placeholder; matches no widget, so it drops nothing) | extra component names to drop, separated by `+` or spaces, never commas (a comma cuts the script line). `#!arguments-desc` lists the component names seen in captures (`banner`, `textBlock`, `cellList`, `twoCards`, `installment`, `bigPromoPDP`, `feedbackTile`, …) with the widget names they appear under. Don't add `tileGrid2`, `tileGridMedium`, `tileGridMini` or `tileScroll` (real products), and be careful with `pixel` (can drive cart alerts) |
 
-- Widgets whose `name` starts with `rtb.` are dropped even with `ad_widgets: false`.
+- Widgets whose `name` starts with `rtb.` are dropped only while `ad_widgets` is on.
 - With both grid switches off, result grids are not parsed at all.
-- If the argument isn't valid JSON (for example the placeholders weren't filled in, or the value
-  was cut at a comma), every switch counts as on: the module behaves as with the defaults and the
-  settings are silently ignored. Check this first if turning a switch off has no effect.
-- A legacy `+`-joined list of component names still works and replaces the component list
+- A switch is off only when its value is `false`, `0`, `no` or `off`. A missing key, an
+  unsubstituted placeholder or a cut argument counts as on, so the module falls back to the
+  defaults. Check the argument first if turning a switch off has no effect.
+- A JSON object is also accepted. A legacy `+`-joined list of component names still works and replaces the component list
   (`argument=advBanner+curtain`). The earlier `tiles:keep` / `sponsored:keep` tokens are gone:
   use `grid_ad_banners` / `sponsored_products` instead.
 
@@ -685,6 +723,8 @@ Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
 - One script file per app handles every pattern; it branches on `$request.url`.
 - **Settings live in the module line, never in the file.** Editing JS on a phone introduces
   curly quotes and breaks the script silently.
+- Pass settings as `key:value` pairs joined with `&`, never with commas, and treat anything not
+  explicitly off as on (see [Shadowrocket reference](#shadowrocket-reference)).
 - For the bank, always strip `Cache-Control`, `ETag`, `Expires`, `Last-Modified`, `Age`,
   `Pragma` and `Content-Length`, then send `Cache-Control: no-store, no-cache, must-revalidate`.
   Without this the app reuses a stored copy and every test result is meaningless.

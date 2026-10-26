@@ -5,12 +5,54 @@
 //   3. apps/promo/api/banners/list         the banner query
 //   4. apps/loyalty/_mf/info/MFBonuses     the promo collections of the "Выгода" screen
 // Caching headers are stripped so the changes apply on every launch.
-// Widget types come from the module argument, joined with +:
-//   argument=MARKETING_BANNER_SLIDER+MARKETING_LAST_OPERATIONS_BANNER
-const arg = typeof $argument !== 'undefined' ? String($argument) : '';
-const TYPES = arg.split('+').map((t) => t.trim()).filter((t) => /^[A-Z_]+$/.test(t));
-if (!TYPES.length) TYPES.push('MARKETING_BANNER_SLIDER');
+// Settings arrive from the module as `key:value` pairs joined with &, e.g.
+//   argument=carousel:true&card_offer:true&operations_banner:true&new_product:true&order_card:true&loyalty_promos:true
+// Commas are what Shadowrocket uses to separate the parameters of a script line, so the
+// argument must never contain one. A JSON object and a legacy "+"-joined list of widget
+// type names are still accepted.
+const arg = typeof $argument !== 'undefined' && $argument !== null ? String($argument) : '';
+let S = null;
+try { const j = JSON.parse(arg); if (j && typeof j === 'object') S = j; } catch (e) {}
+if (!S && arg.indexOf(':') >= 0) {
+  S = {};
+  arg.split(/[&;,\n]+/).forEach((pair) => {
+    const i = pair.indexOf(':');
+    if (i > 0) S[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+  });
+}
+const legacyTypes = S ? [] : arg.split('+').map((t) => t.trim()).filter((t) => /^[A-Z_]+$/.test(t));
+// Anything not explicitly switched off stays on, so an unsubstituted {{{placeholder}}}
+// or a truncated argument falls back to "remove everything" rather than to doing nothing.
+const off = (v) => v === false || v === 'false' || v === 0 || v === '0' || v === 'no' || v === 'off' || v === '';
+const on = (k) => (S ? !off(S[k]) : legacyTypes.length === 0);
+
+const TYPES = [];
+if (legacyTypes.length) TYPES.push.apply(TYPES, legacyTypes);
+else {
+  if (on('carousel')) TYPES.push('MARKETING_BANNER_SLIDER');
+  if (on('operations_banner')) TYPES.push('MARKETING_LAST_OPERATIONS_BANNER');
+  if (on('new_product')) TYPES.push('NEW_PRODUCT_BUTTON');
+  if (on('order_card')) TYPES.push('MAIN_ACCOUNT_ACTIONS');
+}
+
+const HIDE_SELECTORS = [];
+if (on('card_offer')) HIDE_SELECTORS.push(
+  '[data-testid="mfe-card-state"]',     // the ca-traffic card-state slot, any variant
+  '[data-testid="order-plastic-v1"]',   // "Карта с выгодой…" with "Заказать бесплатно"
+  '[data-testid="plastic-in-cart"]');   // "Ozon Карта в корзине"
+if (on('carousel')) HIDE_SELECTORS.push('[data-testid="banners-on-main"]');
+if (on('new_product')) HIDE_SELECTORS.push('[data-testid="new-product-block"]');
+if (on('loyalty_promos')) HIDE_SELECTORS.push('[data-testid="priority-banner"]');
+
 const BANNER_KEYS = ['bannerId', 'placementSlug', 'image', 'imageDark', 'config', 'creativeId'];
+const MODULE_IDS = ['MFCardState%40ca-traffic', 'MFCardState@ca-traffic'];
+const LOYALTY_KEYS = [
+  'getHighestPriorityBanners',  // GetBannersList — partner/promo banner cells
+  'promotionCellBanners',       // GetCashbackProgram — promo cells
+  'getPromotionFiltersV2',      // GetLoyaltyPromotionFilter — "Выгода от партнёров"
+  'activeLotteries',            // GetFRKBonusStateV2 — "Розыгрыши и акции"
+  'availableLotteries',
+];
 
 // 1. The page carries finished banner markup as "MFPromoBanners…@promo": { data: { body: "…" } },
 //    usually percent-encoded, with inner quotes escaped. Empty that body, leave every other module alone.
@@ -84,16 +126,6 @@ function emptyEncodedArrays(text, keys) {
 // 1c. The card offer ("Карта с выгодой…" with the "Заказать бесплатно" button) is a module of
 //     its own. Its markup sits in the page twice, encoded and plain, and the module can redraw
 //     it on the client, so empty both copies and hide it with CSS.
-const MODULE_IDS = ['MFCardState%40ca-traffic', 'MFCardState@ca-traffic'];
-const HIDE_SELECTORS = [
-  '[data-testid="mfe-card-state"]',     // the whole ca-traffic card-state slot: card offer,
-                                        // "Ozon Карта в корзине", order-card prompts
-  '[data-testid="order-plastic-v1"]',   // "Карта с выгодой…" with the "Заказать бесплатно" button
-  '[data-testid="plastic-in-cart"]',    // "Ozon Карта в корзине" variant of the same module
-  '[data-testid="banners-on-main"]',    // the main-screen banner carousel container
-  '[data-testid="new-product-block"]',  // the "Новый счёт или продукт" card in the wallet row
-  '[data-testid="priority-banner"]',    // promo cells in the "Выгода" screen sections
-];
 
 function emptyModuleBodies(text) {
   for (const id of MODULE_IDS) {
@@ -137,13 +169,6 @@ function injectHidingCss(text) {
 // 1d. The "Выгода" screen (loyalty module): its data ships inside the MFBonuses payload under
 //     ctx.frontendFacade. Empty only the promo collections, leaving cashback balance,
 //     monthly categories and the rest of the screen alone.
-const LOYALTY_KEYS = [
-  'getHighestPriorityBanners',  // GetBannersList — partner/promo banner cells
-  'promotionCellBanners',       // GetCashbackProgram — promo cells
-  'getPromotionFiltersV2',      // GetLoyaltyPromotionFilter — "Выгода от партнёров" categories
-  'activeLotteries',            // GetFRKBonusStateV2 — "Розыгрыши и акции"
-  'availableLotteries',
-];
 
 function emptyArraysUnder(node, keys, inside) {
   if (Array.isArray(node)) {
@@ -185,12 +210,15 @@ try { data = JSON.parse(body); } catch (e) {}
 
 let out = body;
 if (data && typeof data === 'object') {
-  if (/banners\/list/.test(url)) emptyBannerLists(data);
-  else if (/apps\/loyalty\/_mf\/info\//.test(url)) emptyArraysUnder(data, LOYALTY_KEYS, false);
-  else hideWidgets(data);
+  if (/banners\/list/.test(url)) { if (on('carousel')) emptyBannerLists(data); }
+  else if (/apps\/loyalty\/_mf\/info\//.test(url)) { if (on('loyalty_promos')) emptyArraysUnder(data, LOYALTY_KEYS, false); }
+  else if (TYPES.length) hideWidgets(data);
   out = JSON.stringify(data);
 } else if (/\/m\/lk\//.test(url) && body) {
-  out = injectHidingCss(emptyModuleBodies(emptyEncodedArrays(emptySsrBanners(body), ['banners', 'creatives'])));
+  let page = body;
+  if (on('carousel')) page = emptyEncodedArrays(emptySsrBanners(page), ['banners', 'creatives']);
+  if (on('card_offer')) page = emptyModuleBodies(page);
+  out = injectHidingCss(page);
 }
 
 const head = Object.assign({}, $response.headers || {});

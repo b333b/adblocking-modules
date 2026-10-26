@@ -20,7 +20,7 @@ After an update, refresh the module in Shadowrocket, then force-quit and relaunc
 
 ## Notes
 
-- MegaFon and Ozon Marketplace have switches in the module's settings. MegaFon changes may only show from the second launch.
+- MegaFon, Ozon Bank and Ozon Marketplace have switches in the module's settings. MegaFon changes may only show from the second launch.
 - A module's rules apply to all traffic while it is on, not only to its app.
 - Yandex Go doesn't remove Lavka ads: Shadowrocket can't decrypt Lavka.
 - `Ozon/Script/ozon-bank-debug.js` is for troubleshooting and isn't loaded by any module. When enabled, it serves captured personal data (name, email, phone, card ids) on unauthenticated `finance.ozon.ru/__dump` pages. Turn it off when done.

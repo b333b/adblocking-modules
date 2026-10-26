@@ -16,21 +16,34 @@ const DEFAULT_COMPONENTS = [
   'adBanner',               // skeeter.* — bank/product banners
   'entryBannerWidget',      // regulardraw.* — prize draw entry banner
 ];
-// Widgets whose name starts with one of these are dropped whatever the component is.
-const DROP_NAME_PREFIXES = ['rtb.'];
+// Widgets whose name starts with one of these are ads whatever their component is.
+// Only consulted when ad_widgets is on.
+const AD_NAME_PREFIXES = ['rtb.'];
 
 // Ads inside result grids: banner tiles labelled "Реклама" and sponsored product tiles
 // (their add-to-cart action carries an `advert` token). widgetStates values are JSON strings.
 const AD_BADGE = /^реклама$/i;
 
-// Settings come from the module's #!arguments as a JSON object, e.g.
-//   argument={"ad_widgets":true,"curtains":true,"grid_ad_banners":true,"sponsored_products":true,"extra":""}
-// A legacy "+"-joined list of component names still works.
-const arg = typeof $argument !== 'undefined' ? String($argument) : '';
+// Settings arrive from the module as `key:value` pairs joined with &, e.g.
+//   argument=ad_widgets:true&curtains:true&grid_ad_banners:true&sponsored_products:true&extra:
+// Commas are what Shadowrocket uses to separate the parameters of a script line, so the
+// argument must never contain one. A JSON object and a legacy "+"-joined list of component
+// names are still accepted.
+const arg = typeof $argument !== 'undefined' && $argument !== null ? String($argument) : '';
 let S = null;
-try { S = JSON.parse(arg); } catch (e) {}
+try { const j = JSON.parse(arg); if (j && typeof j === 'object') S = j; } catch (e) {}
+if (!S && arg.indexOf(':') >= 0) {
+  S = {};
+  arg.split(/[&;\n]+/).forEach((pair) => {
+    const i = pair.indexOf(':');
+    if (i > 0) S[pair.slice(0, i).trim()] = pair.slice(i + 1).trim();
+  });
+}
 const legacy = S ? [] : arg.split('+').map((t) => t.trim()).filter((t) => /^[A-Za-z][A-Za-z0-9_]*$/.test(t));
-const on = (k) => (S ? S[k] !== false && S[k] !== 'false' && S[k] !== 0 : true);
+// Anything not explicitly switched off stays on, so an unsubstituted {{{placeholder}}}
+// or a truncated argument falls back to "remove ads" rather than to doing nothing.
+const off = (v) => v === false || v === 'false' || v === 0 || v === '0' || v === 'no' || v === 'off';
+const on = (k) => (S ? !off(S[k]) : true);
 
 const COMPONENTS = legacy.length ? legacy : [];
 if (!legacy.length) {
@@ -43,11 +56,13 @@ const KEEP_TILES = !(on('grid_ad_banners') || on('sponsored_products'));
 const KEEP_SPONSORED = !on('sponsored_products');
 const KEEP_GRID_BANNERS = !on('grid_ad_banners');
 
+const NAME_PREFIXES = legacy.length || on('ad_widgets') ? AD_NAME_PREFIXES : [];
+
 const removed = [];
 const isAd = (w) =>
   w && typeof w === 'object' &&
   (COMPONENTS.indexOf(w.component) >= 0 ||
-   (typeof w.name === 'string' && DROP_NAME_PREFIXES.some((p) => w.name.indexOf(p) === 0)));
+   (typeof w.name === 'string' && NAME_PREFIXES.some((p) => w.name.indexOf(p) === 0)));
 
 function prune(widgets) {
   if (!Array.isArray(widgets)) return widgets;
