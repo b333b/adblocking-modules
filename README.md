@@ -13,6 +13,7 @@ HTTPS decryption must be on and the Shadowrocket CA certificate trusted (Setting
 | MegaFon | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Megafon/megafon.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Megafon/megafon.sgmodule) |
 | Ozon Bank | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-bank.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-bank.sgmodule) |
 | Ozon Marketplace | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule) |
+| Ozon MITM exclusions | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-mitm-exclude.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-mitm-exclude.sgmodule) |
 | Yandex Maps | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule) |
 | Yandex Go | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule) |
 
@@ -22,6 +23,8 @@ After an update, refresh the module in Shadowrocket, then force-quit and relaunc
 
 - MegaFon, Ozon Bank and Ozon Marketplace have switches in the module's settings. MegaFon changes may only show from the second launch.
 - A module's rules apply to all traffic while it is on, not only to its app.
+- Ozon Marketplace turns off Shadowrocket's server-certificate check (`api.ozon.ru` fails it otherwise). This most likely applies to every module's decrypted hosts while it is on.
+- Ozon MITM exclusions keeps two Ozon Bank hosts out of HTTPS decryption. Install it if another config decrypts all of `*.ozon.ru`.
 - Yandex Go doesn't remove Lavka ads: Shadowrocket can't decrypt Lavka.
 - `Ozon/Script/ozon-bank-debug.js` is for troubleshooting and isn't loaded by any module. When enabled, it serves captured personal data (name, email, phone, card ids) on unauthenticated `finance.ozon.ru/__dump` pages. Turn it off when done.
 

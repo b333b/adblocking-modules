@@ -1,0 +1,29 @@
+#!name=[AdBlock] Ozon MITM exclusions
+#!desc=Keeps HTTPS decryption off the Ozon hosts whose certificates Shadowrocket cannot verify. Without this, a broad *.ozon.ru decryption list breaks those hosts with CERTIFICATE_VERIFY_FAILED and the apps show "no connection".
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+
+# Why: Shadowrocket terminates TLS for a decrypted host, then opens its own
+# connection to the real server and verifies that server's certificate against its
+# own trust store. For these hostnames that verification fails, the stream is
+# dropped, and the app never gets a response. iOS itself accepts the same
+# certificates, so the apps work fine as long as the host is not decrypted.
+# Either leave these hosts undecrypted (this module), or set
+# skip-server-cert-verify = true under [MITM] — undocumented in Shadowrocket,
+# but it works (confirmed 2026-10-31). The marketplace module sets it for
+# api.ozon.ru; the two bank hosts are excluded here because nothing scripts them.
+#
+# Confirmed failing (2026-10-26, app 19.40.0): api.ozon.ru,
+# api.finance.ozon.ru, check.bank.ozon.ru. The sibling finance.ozon.ru verifies
+# fine on the same IP, so this is per-hostname, not per-server.
+#
+# Nothing in these modules scripts the two bank hosts below, so excluding them is
+# free: it restores the bank app's native API calls (pinpad, offline data, push).
+#
+# api.ozon.ru is different: the marketplace module decrypts it to strip ads and
+# relies on skip-server-cert-verify. Only uncomment the line below if you drop that
+# setting — then excluding the host is what keeps the Marketplace app working.
+
+[MITM]
+hostname = %APPEND% -api.finance.ozon.ru, -check.bank.ozon.ru
+# hostname = %APPEND% -api.ozon.ru

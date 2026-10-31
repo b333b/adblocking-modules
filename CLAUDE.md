@@ -3,7 +3,8 @@
 Context for AI assistants (Claude Code, claude.ai chats) working on this repo.
 Chats and Claude Code do not share conversation history: this file is the shared
 memory. Update it after any meaningful change. The repo is public, so keep
-personal data out of it.
+personal data out of it. Since 2026-10-31 Claude Code also writes and debugs the modules
+(not only imports uploads from chats) and maintains the repo.
 
 This repo merges the former `avito-adblocking-module`, `ozon-adblocking-module` and
 `yandex-adblocking-module` repos (now permanently removed). Their CLAUDE.md files are combined below,
@@ -17,7 +18,7 @@ one top-level section per app.
 | [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
 | [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
 | [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
-| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
+| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) · [Hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
 | [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
 | [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
 | | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |
@@ -49,7 +50,8 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Avito | `online.anero.app` | [`Avito/avito.sgmodule`](Avito/avito.sgmodule) | [`Avito/Script/avito.js`](Avito/Script/avito.js) | `avito-ads` | `app.avito.ru`, `www.avito.ru`, `stats.avito.ru` |
 | MegaFon | — | [`Megafon/megafon.sgmodule`](Megafon/megafon.sgmodule) | [`Megafon/Script/megafon.js`](Megafon/Script/megafon.js); rule set [`Megafon/Rules/analytics-true.list`](Megafon/Rules/analytics-true.list) | `megafon` (API JSON), `megafon-page` (page + VPN chunk) | `api.megafon.ru`, `lk.megafon.ru`, `api.inappstory.ru` |
 | Ozon Bank | `ru.ozon.fintech.finance` | [`Ozon/ozon-bank.sgmodule`](Ozon/ozon-bank.sgmodule) | [`Ozon/Script/ozon-bank.js`](Ozon/Script/ozon-bank.js) (clean), [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) (debug, not loaded by default) | `ozon-bank-page`, `-main`, `-loyalty`, `-list` | `finance.ozon.ru` |
-| Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru` |
+| Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru`, with `skip-server-cert-verify = true` ([why](#ozon-hosts-that-must-not-be-decrypted)) |
+| Ozon MITM exclusions | — | [`Ozon/ozon-mitm-exclude.sgmodule`](Ozon/ozon-mitm-exclude.sgmodule) | none | none | excludes `api.finance.ozon.ru`, `check.bank.ozon.ru` from decryption |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
 | Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka answers with a captcha when Shadowrocket MITMs it, so Lavka is [not handled](#go-applavkayandexnet-lavka-web-app)) |
 
@@ -58,7 +60,8 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Avito | 230.1 | from scratch (not a fork) | working |
 | MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | working, see [known risks](#megafon-known-risks--to-verify-on-device) |
 | Ozon Bank | — | from scratch | working |
-| Ozon Marketplace | — | from scratch | new |
+| Ozon Marketplace | — | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
+| Ozon MITM exclusions | — | from scratch | working |
 | Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Go | 4.19 (September 2026) | from scratch | working, see [open items](#go-open-items) |
 
@@ -75,6 +78,7 @@ Megafon/Rules/analytics-true.list  MegaFon analytics hosts (always loaded)
 Megafon/Rules/analytics-false.list unused (kept; from the switchable rule-set attempt)
 Ozon/ozon-bank.sgmodule            Ozon Bank module, loads the clean script
 Ozon/ozon-marketplace.sgmodule     Ozon Marketplace module
+Ozon/ozon-mitm-exclude.sgmodule    Ozon hosts kept out of decryption (no script)
 Ozon/Script/ozon-bank.js           Ozon Bank clean script
 Ozon/Script/ozon-bank-debug.js     Ozon Bank debug script
 Ozon/Script/ozon-marketplace.js    Ozon Marketplace script
@@ -143,6 +147,16 @@ Facts that apply to every module.
   `extra:Add_components_here`).
 - All scripts fail open: unexpected shape → pass the original body through (`$done({})`), never a
   half-edited body.
+- Decrypting a host means Shadowrocket opens its own connection to the server and verifies the
+  server's certificate against its own trust store, not iOS's. Some hosts fail that check
+  (`CERTIFICATE_VERIFY_FAILED`): the request dies before any response exists, no script runs, and
+  the app reports no connection. Two fixes: `skip-server-cert-verify = true` under `[MITM]` (Surge's
+  key, not in Shadowrocket's documentation, but it works in a module, confirmed 2026-10-31), or
+  leave the host undecrypted with a `-` prefix (`hostname = %APPEND% -host.example`). See
+  [Ozon: hosts that must not be decrypted](#ozon-hosts-that-must-not-be-decrypted).
+- When an app suddenly reports no connection, read a Shadowrocket PacketTunnel log before touching
+  a script: grep it for `CERTIFICATE_VERIFY_FAILED`, and check whether the script name appears at
+  all. If it doesn't, the response never arrived and the script is not involved.
 
 ## Cross-module overlaps
 
@@ -165,6 +179,12 @@ deliberately keeps working. Duplicate REJECT rules are harmless.
 
 MegaFon's analytics rule set is always on (MegaFon's `analytics` switch only covers the app's
 own telemetry), so with MegaFon enabled Metrica and MyTracker are blocked for every app.
+
+Ozon Marketplace sets `skip-server-cert-verify = true` under `[MITM]`. A `[MITM]` setting is not
+tied to one hostname (in Surge it applies to every decrypted host), so expect that while that
+module is on, Shadowrocket checks no upstream certificate for any module's decrypted hosts:
+Ozon Bank's `finance.ozon.ru`, MegaFon's account pages, Avito, Yandex. Whether Shadowrocket scopes
+it more narrowly is not tested.
 
 ---
 
@@ -534,6 +554,10 @@ Nothing here is a plain URL-REGEX rule list. Rules were tried first and abandone
 | [`Ozon/Script/ozon-bank-debug.js`](Ozon/Script/ozon-bank-debug.js) | nothing by default (see [debug workflow](#ozon-bank-debug-workflow)) | **bank debug script** — capture pages, used when something breaks. Predates the current bank script: it does not know the `MFBonuses`, `api/mainPage`/`updateMainPage` routes or the `mfe-card-state` / `plastic-in-cart` / `banners-on-main` CSS selectors |
 | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | **marketplace script** — drops ad widgets from composer pages and ad tiles / sponsored products from result grids |
 
+A third module, [`Ozon/ozon-mitm-exclude.sgmodule`](Ozon/ozon-mitm-exclude.sgmodule), has no
+script: it keeps two bank hosts out of decryption (see
+[hosts that must not be decrypted](#ozon-hosts-that-must-not-be-decrypted)).
+
 A stale raw link is the single most common cause of "my change did nothing": check the real
 paths before writing a module line.
 
@@ -719,6 +743,10 @@ argument=ad_widgets:{{{ad_widgets}}}&curtains:{{{curtains}}}&grid_ad_banners:{{{
 Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
 `userMarketingActionsSelector`.
 
+The module's `[MITM]` also sets `skip-server-cert-verify = true`: without it `api.ozon.ru` fails
+Shadowrocket's certificate check and the app shows no connection (see
+[hosts that must not be decrypted](#ozon-hosts-that-must-not-be-decrypted)).
+
 `_action/v2/setBannerAction`, `_action/v2/regulardraw/markLkBannerAsSeen` and the
 `xapi.ozon.ru` logging endpoints are pure tracking and can be handled with plain rules
 (not in the module yet).
@@ -740,6 +768,30 @@ Deliberately not included: `banner` (`cms.dynamicBanner`), `pixel`,
 - Text edits on the page must handle both the percent-encoded form (`%22`, `%5C`, `%5B`) and
   the plain form, count brackets, and respect escapes.
 - `$notification.post` does nothing in Shadowrocket. Report through a page instead.
+
+### Ozon: hosts that must not be decrypted
+
+Some Ozon hostnames fail Shadowrocket's own certificate check when decrypted (see
+[Shadowrocket reference](#shadowrocket-reference)): seen 2026-10-26 (app 19.40.0) on
+`api.ozon.ru`, `api.finance.ozon.ru` and `check.bank.ozon.ru`. `finance.ozon.ru` verifies fine on
+the same IP, so it is per hostname, not per server. iOS accepts the same certificates, so the
+apps work as long as the host is not decrypted. Every request to a failing host dies with
+`CERTIFICATE_VERIFY_FAILED`, no script runs, and the app reports no connection. This is what
+stopped Ozon Marketplace until the fix of 2026-10-31.
+
+| Host | Decrypted by | Fix |
+| --- | --- | --- |
+| `api.ozon.ru` | Ozon Marketplace (its script edits composer pages) | `skip-server-cert-verify = true` in the Marketplace module's `[MITM]` (confirmed 2026-10-31) |
+| `api.finance.ozon.ru`, `check.bank.ozon.ru` | nothing in this repo; a broad `*.ozon.ru` entry elsewhere | excluded by `ozon-mitm-exclude.sgmodule` (`-` prefix); restores the bank app's native calls (pin pad, offline data, push) |
+
+- `skip-server-cert-verify` switches off upstream certificate verification, so Shadowrocket can
+  no longer detect interception between the phone and those servers; it most likely covers every
+  decrypted host, not only `api.ozon.ru` (see [Cross-module overlaps](#cross-module-overlaps)).
+- `ozon-mitm-exclude.sgmodule` carries a commented-out `-api.ozon.ru` line. Use it only if the
+  Marketplace module drops `skip-server-cert-verify`: excluding the host then keeps the app
+  working, but its ads are no longer removed.
+- A broad `*.ozon.ru` (or `*.ru`) entry in another config or module decrypts these hosts even
+  when our modules are off, so turning a module off is never the fix; exclude the host instead.
 
 ### Ozon: why rules were not enough
 

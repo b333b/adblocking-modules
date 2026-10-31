@@ -7,4 +7,8 @@
 [Script]
 ozon-mp-composer = type=http-response,pattern=^https://api\.ozon\.ru/api/composer-api\.bx/(page|widget)/json/v2,requires-body=1,max-size=-1,timeout=10,argument=ad_widgets:{{{ad_widgets}}}&curtains:{{{curtains}}}&grid_ad_banners:{{{grid_ad_banners}}}&sponsored_products:{{{sponsored_products}}}&extra:{{{extra}}},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Ozon/Script/ozon-marketplace.js
 [MITM]
+# api.ozon.ru fails Shadowrocket's own certificate check when decrypted, so
+# verification of decrypted hosts is switched off. Undocumented in Shadowrocket
+# (it is Surge's key) but confirmed working 2026-10-31.
+skip-server-cert-verify = true
 hostname = %APPEND% api.ozon.ru
