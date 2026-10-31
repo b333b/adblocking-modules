@@ -154,9 +154,17 @@ Facts that apply to every module.
   key, not in Shadowrocket's documentation, but it works in a module, confirmed 2026-10-31), or
   leave the host undecrypted with a `-` prefix (`hostname = %APPEND% -host.example`). See
   [Ozon: hosts that must not be decrypted](#ozon-hosts-that-must-not-be-decrypted).
+- **`skip-server-cert-verify` is global** (confirmed on device 2026-10-31): set in one module, it
+  turns off the upstream certificate check for every decrypted host, from every module and from
+  the main config, not only for the hosts that module lists. Shadowrocket merges all `[MITM]`
+  sections into one hostname list with no per-host options.
 - When an app suddenly reports no connection, read a Shadowrocket PacketTunnel log before touching
   a script: grep it for `CERTIFICATE_VERIFY_FAILED`, and check whether the script name appears at
-  all. If it doesn't, the response never arrived and the script is not involved.
+  all. If it doesn't, the response never arrived and the script is not involved. The log prints
+  the merged MITM hostname list at start, but not `[MITM]` options such as
+  `skip-server-cert-verify`, and not upstream certificate checks that pass, so it can't show
+  whether verification was skipped. Logs hold device ids, location, IP and proxy server details:
+  never commit them.
 
 ## Cross-module overlaps
 
@@ -180,11 +188,11 @@ deliberately keeps working. Duplicate REJECT rules are harmless.
 MegaFon's analytics rule set is always on (MegaFon's `analytics` switch only covers the app's
 own telemetry), so with MegaFon enabled Metrica and MyTracker are blocked for every app.
 
-Ozon Marketplace sets `skip-server-cert-verify = true` under `[MITM]`. A `[MITM]` setting is not
-tied to one hostname (in Surge it applies to every decrypted host), so expect that while that
-module is on, Shadowrocket checks no upstream certificate for any module's decrypted hosts:
-Ozon Bank's `finance.ozon.ru`, MegaFon's account pages, Avito, Yandex. Whether Shadowrocket scopes
-it more narrowly is not tested.
+Ozon Marketplace sets `skip-server-cert-verify = true` under `[MITM]`, and that setting is global
+(confirmed on device 2026-10-31): while the module is on, Shadowrocket checks no upstream
+certificate for any decrypted host, from any module or the main config: Ozon Bank's
+`finance.ozon.ru`, MegaFon's account pages, Avito, Yandex, and whatever else the main config
+decrypts. Interception between the phone and those servers then goes unnoticed.
 
 ---
 
@@ -785,8 +793,10 @@ stopped Ozon Marketplace until the fix of 2026-10-31.
 | `api.finance.ozon.ru`, `check.bank.ozon.ru` | nothing in this repo; a broad `*.ozon.ru` entry elsewhere | excluded by `ozon-mitm-exclude.sgmodule` (`-` prefix); restores the bank app's native calls (pin pad, offline data, push) |
 
 - `skip-server-cert-verify` switches off upstream certificate verification, so Shadowrocket can
-  no longer detect interception between the phone and those servers; it most likely covers every
-  decrypted host, not only `api.ozon.ru` (see [Cross-module overlaps](#cross-module-overlaps)).
+  no longer detect interception between the phone and those servers. It covers every decrypted
+  host, not only `api.ozon.ru` (confirmed 2026-10-31, see [Cross-module overlaps](#cross-module-overlaps)).
+  The narrower alternative is the commented-out `-api.ozon.ru` exclusion below, at the cost of
+  Marketplace ad removal.
 - `ozon-mitm-exclude.sgmodule` carries a commented-out `-api.ozon.ru` line. Use it only if the
   Marketplace module drops `skip-server-cert-verify`: excluding the host then keeps the app
   working, but its ads are no longer removed.

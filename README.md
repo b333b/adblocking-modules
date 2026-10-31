@@ -23,7 +23,7 @@ After an update, refresh the module in Shadowrocket, then force-quit and relaunc
 
 - MegaFon, Ozon Bank and Ozon Marketplace have switches in the module's settings. MegaFon changes may only show from the second launch.
 - A module's rules apply to all traffic while it is on, not only to its app.
-- Ozon Marketplace turns off Shadowrocket's server-certificate check (`api.ozon.ru` fails it otherwise). This most likely applies to every module's decrypted hosts while it is on.
+- Ozon Marketplace turns off Shadowrocket's server-certificate check (`api.ozon.ru` fails it otherwise). This applies to every decrypted host, from every module and your own config, while it is on.
 - Ozon MITM exclusions keeps two Ozon Bank hosts out of HTTPS decryption. Install it if another config decrypts all of `*.ozon.ru`.
 - Yandex Go doesn't remove Lavka ads: Shadowrocket can't decrypt Lavka.
 - `Ozon/Script/ozon-bank-debug.js` is for troubleshooting and isn't loaded by any module. When enabled, it serves captured personal data (name, email, phone, card ids) on unauthenticated `finance.ozon.ru/__dump` pages. Turn it off when done.
