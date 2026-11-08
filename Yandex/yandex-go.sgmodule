@@ -29,8 +29,8 @@ DOMAIN-SUFFIX,app-analytics-services.com,REJECT
 ^https?:\/\/yandex\.ru\/an\/ - reject
 # Yandex ad network loader (context.js) used by Afisha and other web views
 ^https?:\/\/yandex\.ru\/ads\/ - reject
-# Click/event logging (clck/redir, used for real link redirects, is left alone)
-^https?:\/\/yandex\.ru\/clck\/(click|jclck) - reject
+# Click/event logging (clck/redir, used for real link redirects, and clck/jclck, used for Yandex Market search are left alone)
+^https?:\/\/yandex\.ru\/clck\/click - reject
 # Eats in-app marketing communications (pop-ups/stories); "{}" is a valid empty reply
 ^https:\/\/tc\.eats\.yandex\.ru\/4\.0\/eda-superapp\/eats\/v1\/eats-communications\/v1\/communications - reject-dict
 # Scooters promo block ("{}" observed as the normal empty reply)
