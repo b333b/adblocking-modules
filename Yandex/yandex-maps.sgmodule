@@ -2,6 +2,7 @@
 #!desc=Removes promo objects, ad pins, suggestions, search hints, showcase, Plus, and prompt/ad trackers
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-10-14 05:06 MSK
 
 [Rule]
 # Not MITM'd, so blocked by domain

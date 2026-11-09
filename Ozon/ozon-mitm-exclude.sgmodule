@@ -2,6 +2,7 @@
 #!desc=Keeps HTTPS decryption off the Ozon hosts whose certificates Shadowrocket cannot verify. Without this, a broad *.ozon.ru decryption list breaks those hosts with CERTIFICATE_VERIFY_FAILED and the apps show "no connection".
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-10-31 05:42 MSK
 
 # Why: Shadowrocket terminates TLS for a decrypted host, then opens its own
 # connection to the real server and verifies that server's certificate against its

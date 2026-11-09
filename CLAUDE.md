@@ -99,6 +99,10 @@ Dixy/Script/                       Dixy (no module yet; .gitkeep only)
 - Every module's name is `#!name=[AdBlock] <App name>` (e.g. `#!name=[AdBlock] Ozon Marketplace`),
   `#!category=AdBlock`, and `#!homepage` is `https://github.com/b333b/adblocking-modules`.
   Uploaded modules often carry other names ("— no ads", "— no banners"): rename them on import.
+- Every module carries `#!date=YYYY-MM-DD HH:MM MSK` right after `#!homepage`: the date and time
+  (Moscow time) of its last edit. Update it in the same commit whenever the module file changes;
+  set it on import for new modules. It dates the module file itself, not the scripts it loads.
+  The dates added on 2026-11-10 are each module's last commit before that.
 - Uploaded modules come with `PASTE_RAW_URL_OF_<file>.js` placeholders: replace them with the raw URL.
 - Module files use the `.sgmodule` extension (rename `.module` uploads).
 - New apps are added the same way (e.g. `Ozon/ozon-marketplace.sgmodule` + `Ozon/Script/ozon-marketplace.js`),

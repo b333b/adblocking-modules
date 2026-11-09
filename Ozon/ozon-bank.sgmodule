@@ -2,6 +2,7 @@
 #!desc=Removes banner carousel, card offers and promo sections from the Ozon Bank app
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-10-26 20:11 MSK
 #!arguments=carousel:true,card_offer:true,operations_banner:true,new_product:true,order_card:true,loyalty_promos:true
 #!arguments-desc=Each setting is true or false.\n\ncarousel — banner slider on the main screen\ncard_offer — "Карта с выгодой…" / "Ozon Карта в корзине" block\noperations_banner — banner inside the operations list\nnew_product — "Новый счёт или продукт" button and card\norder_card — order-card section next to your cards\nloyalty_promos — "Выгода от партнёров" and "Розыгрыши и акции" on the Выгода screen
 [Script]

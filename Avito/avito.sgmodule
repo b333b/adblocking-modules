@@ -2,6 +2,7 @@
 #!desc=Removes ads/promos (home feed, search, favorites, item card, my listings), blocks ad-tech and telemetry hosts
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-10-14 05:06 MSK
 
 [Rule]
 # Ad exchanges and ad-tech pixels (host-level, no MITM needed)
