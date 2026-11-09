@@ -60,9 +60,9 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Avito | 230.1 | from scratch (not a fork) | working |
 | MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | working, see [known risks](#megafon-known-risks--to-verify-on-device) |
 | Ozon Bank | — | from scratch | working |
-| Ozon Marketplace | — | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
+| Ozon Marketplace | build 1050 (capture, November 2026) | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
 | Ozon MITM exclusions | — | from scratch | working |
-| Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
+| Yandex Maps | 31.1.5 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
 
 ## Repository layout
@@ -727,6 +727,13 @@ left byte-for-byte as they were. On two real captures: 12 and 22 ad tiles remove
 layout widgets), with 70 and 142 ordinary products left in place, no broken states and no paging
 fields changed.
 
+Re-checked 2026-11-09 (app build 1050; home, category, cart, favourites, product pages, profile,
+Fresh): same layout shape and ad components. The script removed every `rtb.*` widget, the
+`regulardraw` banner and the `cms.dynamicCurtain` curtain; no "Реклама" or erid was left in any
+response. Ozon's own promos that stay (not ads, listed in `#!arguments-desc` for `extra`):
+`promoStickyBubble` (floating bubble over the home page), `bigPromoCounterNavbar` (sale
+countdown), `couponGoals` (Fresh discount goals). No search page was captured.
+
 #### Ozon Marketplace: module settings
 
 The module declares `#!arguments` (with `#!arguments-desc`), so each switch can be changed in the
@@ -877,6 +884,13 @@ flags and JSON configs).
     The script dispatches on `$request.url`.
 - Shadowrocket caches scripts fetched by URL: after pushing a script change, the
   module/script must be refreshed in Shadowrocket before testing.
+- Re-checked 2026-11-09 on 31.1.5: every endpoint and startup section the script edits is still
+  there and still edited; no new ad endpoint. `adverts-on-map` in startup (Market campaign of
+  2023) and `maps-adverts-on-map-3d` (ended 2024) carry only expired campaigns. MapKit flags seen
+  but not dropped, candidates if a matching nag or ad shows up: `rate_route*` (rate-the-route
+  prompt), `hints_set_in_search_bar` (`ai_agent`), `poi_ads_auction_config` (ad pin auction),
+  `experimental_exp_pay_offers`, and `MAPS_RENDERER ads = enabled` (ads in map tiles; untested,
+  and tile requests must never be redirected).
 - Test changes to the app with: force-quit, launch twice. Some changes only show
   after a delete + reinstall (see [Caching](#maps-caching)).
 
@@ -1157,6 +1171,13 @@ Notes on the inactive handlers, kept in case Lavka can be MITM'd again (that nee
 - Tile promo badges in `pager_widget` ("акция", "стирка").
 - `payment_widgets` Yandex Pay promo.
 - Eats restaurant-page and search ads (not in capture).
+- Market home pop-up offering products at a discount (seen 2026-11-10, not removed yet). Only a
+  Shadowrocket log exists: no data request precedes it, so it comes with the home page HTML; at the
+  same moment the urbanads SDK inside the `mf-recommendations-touch` bundle rendered a creative
+  (`integrationMode: external_creatives`, page `MainPageLenta`, rtbcount tag
+  `madv_touch_5_mix_render`) and loaded `avatars.mds.yandex.net/get-market-adv/…/orig?download`.
+  It may render into a portal outside the widget roots the style hides. Needs a ProxyPin capture of
+  the Market home page with the pop-up (and the pop-up's text) to find its container.
 - Market search-result incuts were present only as empty `madvIncut` in the capture; sponsored product rows in search not yet observed.
 - Market product card (KM) page and Eats restaurant menu page not captured yet.
 - `yandex.ru/suggest-market` returns personal search history (no ads) — never paste into the repo.
