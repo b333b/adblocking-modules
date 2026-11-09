@@ -413,8 +413,62 @@ const MARKET_CSS = [
   '[data-zone-data*="advTagInfo"]',
 ].join(",\n") + "{display:none!important}";
 
+// Ad pop-up on opening Market (e.g. a brand's "Новинки …" banner with "Реклама"). Its
+// creative arrives inside the page, in the state patch of @marketfront/MadvPopup
+// (<noframes data-apiary="patch">{…creatives.result…}</noframes>), and @marketfront/PopupManager
+// queues it ("queue":["madvPopup"], onboardingType ADS_POPUP). The pop-up is drawn outside the
+// widget's own element, so the style alone doesn't hide it: empty the creatives, mark the
+// pop-up as not openable and take it out of the manager's queue. dataLoaded stays true so the
+// widget doesn't fetch creatives again.
+function isAdPopupEntry(id, p) {
+  return id === "madvPopup" || (isObj(p) && isObj(p.props) && p.props.onboardingType === "ADS_POPUP");
+}
+function stripMarketPopupState(d) {
+  const w = isObj(d) && isObj(d.widgets) ? d.widgets : null;
+  if (!w) return false;
+  let changed = false;
+  const madv = w["@marketfront/MadvPopup"];
+  if (isObj(madv)) {
+    for (const k in madv) {
+      const s = madv[k];
+      if (!isObj(s)) continue;
+      if (isObj(s.creatives) && Array.isArray(s.creatives.result) && s.creatives.result.length) {
+        s.creatives.result = [];
+        changed = true;
+      }
+      if (s.canBeOpen !== false) { s.canBeOpen = false; changed = true; }
+      if ("baobabZoneData" in s) { delete s.baobabZoneData; changed = true; }
+    }
+  }
+  const pm = w["@marketfront/PopupManager"];
+  if (isObj(pm)) {
+    for (const k in pm) {
+      const s = pm[k];
+      if (!isObj(s) || !isObj(s.popups)) continue;
+      const ads = Object.keys(s.popups).filter((id) => isAdPopupEntry(id, s.popups[id]));
+      if (!ads.length) continue;
+      ads.forEach((id) => delete s.popups[id]);
+      if (Array.isArray(s.queue)) s.queue = s.queue.filter((id) => ads.indexOf(id) < 0);
+      changed = true;
+    }
+  }
+  return changed;
+}
+function stripMarketPopups(raw) {
+  if (raw.indexOf("MadvPopup") < 0 && raw.indexOf("PopupManager") < 0) return raw;
+  return raw.replace(/(<noframes data-apiary="patch">)([\s\S]*?)(<\/noframes>)/g, (m, open, json, close) => {
+    if (json.indexOf("MadvPopup") < 0 && json.indexOf("PopupManager") < 0) return m;
+    let d;
+    try { d = JSON.parse(json); } catch (e) { return m; }
+    if (!stripMarketPopupState(d)) return m;
+    // "<" escaped so no string inside can close the <noframes> element
+    return open + JSON.stringify(d).replace(/</g, "\\u003c") + close;
+  });
+}
+
 function handleMarketHtml(raw) {
   if (typeof raw !== "string" || raw.indexOf("<head") < 0) return null;
+  raw = stripMarketPopups(raw);
   const tag = '<style id="ygo-adblock">' + MARKET_CSS + "</style>";
   const i = raw.indexOf("</head>");
   return i >= 0 ? raw.slice(0, i) + tag + raw.slice(i) : raw.replace(/<head[^>]*>/, (m) => m + tag);
