@@ -1,3 +1,4 @@
+// Last edited: 2026-10-26 20:58 MSK
 // MegaFon (iOS app): removes promo banners, stories, pop-ups, offers, loan ads, game center,
 // onboarding tips, surveys, "new" badges, the VPN warning bar, chosen main-screen sections, the
 // "Для меня" tab and first-party telemetry.

@@ -1,3 +1,4 @@
+// Last edited: 2026-10-26 20:11 MSK
 // Ozon Bank: removes the banner carousel and the card offer from the main screen.
 // Handles every place they arrive:
 //   1. /m/lk/main                          the rendered banner markup and the banner data in the page

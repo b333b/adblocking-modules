@@ -1,3 +1,4 @@
+// Last edited: 2026-10-26 20:11 MSK
 // Ozon Marketplace (api.ozon.ru): removes ad and promo widgets from composer page responses.
 //
 // A composer page is { layout: [ {component, stateId, name, placeholders[]}, … ],

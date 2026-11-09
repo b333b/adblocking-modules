@@ -1,3 +1,4 @@
+// Last edited: 2026-09-29 20:37 MSK
 // Yandex Maps: strip UI/ad experiment flags from mapkit2/config (protobuf, binary-body-mode=1)
 // and edit the JSON configs (startup, config, compliance, notifications...) (text mode).
 // Structure: top-level field 32 = experiments; its field 1 = one experiment;

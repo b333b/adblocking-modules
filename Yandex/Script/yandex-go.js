@@ -1,3 +1,4 @@
+// Last edited: 2026-11-10 01:10 MSK
 /*
  * Yandex Go — ads & annoyances cleaner (Shadowrocket http-response script)
  *

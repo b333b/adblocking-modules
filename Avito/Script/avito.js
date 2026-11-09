@@ -1,3 +1,4 @@
+// Last edited: 2026-09-29 20:37 MSK
 /*
  * Avito ad cleanup — Shadowrocket http-response script
  * Endpoints are mapped from a ProxyPin capture of Avito iOS 230.1 (app id online.anero.app).

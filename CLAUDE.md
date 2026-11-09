@@ -103,6 +103,12 @@ Dixy/Script/                       Dixy (no module yet; .gitkeep only)
   (Moscow time) of its last edit. Update it in the same commit whenever the module file changes;
   set it on import for new modules. It dates the module file itself, not the scripts it loads.
   The dates added on 2026-11-10 are each module's last commit before that.
+- Every script (`*.js`) starts with `// Last edited: YYYY-MM-DD HH:MM MSK` on its first line, the
+  same thing for the script file. Update it in the same commit whenever the script changes. Since
+  module and script dates are separate, a script-only fix leaves the module's `#!date` alone.
+  The dates added on 2026-11-10 are each script's last commit before that; `avito.js`,
+  `ozon-bank-debug.js` and `yandex-maps.js` show 2026-09-29 20:37, the merge into this repo,
+  because their earlier history stayed in the removed repos.
 - Uploaded modules come with `PASTE_RAW_URL_OF_<file>.js` placeholders: replace them with the raw URL.
 - Module files use the `.sgmodule` extension (rename `.module` uploads).
 - New apps are added the same way (e.g. `Ozon/ozon-marketplace.sgmodule` + `Ozon/Script/ozon-marketplace.js`),

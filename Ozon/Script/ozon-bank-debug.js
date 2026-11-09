@@ -1,3 +1,4 @@
+// Last edited: 2026-09-29 20:37 MSK
 // Ozon Bank: carousel hider + built-in troubleshooting. d1
 // Runs on the main-screen responses, applies the change, and records exactly what it saw and did.
 // Pages (open in Safari):
