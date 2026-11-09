@@ -7,6 +7,8 @@
 # Ad impression / click trackers
 DOMAIN,media-adv.market.yandex.ru,REJECT
 DOMAIN,em.market.ya.ru,REJECT
+DOMAIN,em.market.yandex.ru,REJECT
+DOMAIN,wcm.weborama-tech.ru,REJECT
 DOMAIN,amc.yandex.ru,REJECT
 DOMAIN,adfstat.yandex.ru,REJECT
 DOMAIN,market-baobab.yandex.ru,REJECT
@@ -23,6 +25,10 @@ DOMAIN,csp.yandex.net,REJECT
 DOMAIN,report.appmetrica.yango.com,REJECT
 DOMAIN,log.strm.yandex.ru,REJECT
 DOMAIN-SUFFIX,app-analytics-services.com,REJECT
+DOMAIN,firebaselogging-pa.googleapis.com,REJECT
+# Adjust attribution and event SDK in the app; web-view log shipping (OpenTelemetry)
+DOMAIN,analytics.adjust.com,REJECT
+DOMAIN,ingest.monium.yandex,REJECT
 
 [URL Rewrite]
 # Yandex ad network impression counters (rtbcount etc.)

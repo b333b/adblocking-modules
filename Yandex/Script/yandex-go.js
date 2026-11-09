@@ -76,10 +76,18 @@ function emptyDiv() {
 
 // Keep the component object (id/type/layout) but strip its content and every
 // action, so nothing renders and nothing (e.g. next-page loading) fires.
-function neuterComponent(c) {
+// Since Nov 2026 a component can point at a copy of its content in
+// shared.divData (divDataSharedId, seen on urbanads/sdk): that copy is emptied
+// too and the pointer dropped, so the client can't render the ad from it.
+function neuterComponent(c, body) {
   if (!isObj(c)) return;
   c.actions = {};
   c.divData = { log_id: (c.divData && c.divData.log_id) || c.id || "empty", states: [{ state_id: 0, div: emptyDiv() }] };
+  if (c.divDataSharedId != null) {
+    const shared = body && isObj(body.shared) && isObj(body.shared.divData) ? body.shared.divData : null;
+    if (shared && shared[c.divDataSharedId]) shared[c.divDataSharedId] = c.divData;
+    delete c.divDataSharedId;
+  }
 }
 
 // -------------------------------------------------------------- handlers
@@ -106,11 +114,11 @@ function handleLayout(body) {
     const isMediaBanners = s.origType === "MediaBannersRenderData" || s.id === "bdui_media_banners";
     if (isFeed) {
       s.content = [];
-      if (s.loadingSnippet) neuterComponent(s.loadingSnippet);
-      if (s.errorSnippet) neuterComponent(s.errorSnippet);
+      if (s.loadingSnippet) neuterComponent(s.loadingSnippet, body);
+      if (s.errorSnippet) neuterComponent(s.errorSnippet, body);
       changed = true;
     } else if (isMediaBanners && Array.isArray(s.content)) {
-      s.content.forEach(neuterComponent);
+      s.content.forEach((c) => neuterComponent(c, body));
       changed = true;
     }
   }
@@ -155,13 +163,25 @@ const EATS_DROP_TYPES = new Set([
   "mini_feedback",             // "rate your order" nag
   "sku_upsell_promo_carousel", // brand-sponsored shelves in pharmacy/shops ("sexy_polka": Durex, TeraFlu...)
 ]);
+// "white_inventory" (Nov 2026): ad placeholders filled by the web app's
+// fastfood-advertisement component. Templates seen: madv_banners_eda_recommendation(_8)
+// (ad banners between the restaurant lists) and market_popup_communication_yellow
+// (ad pop-up, in the slot madv_popup_communications used to take). Only items that
+// look like ads are dropped, in case the type is later reused for something else.
+function isAdWhiteInventory(w) {
+  return isObj(w) && (/madv|market_popup|adv/i.test(String(w.template_name || "")) ||
+    (isObj(w.payload) && isObj(w.payload.advertisement)));
+}
 
 function handleEatsLayout(body) {
   if (!isObj(body) || !Array.isArray(body.layout) || !isObj(body.data)) return false;
   const dropIds = new Set();
+  const adInventory = new Set(
+    (Array.isArray(body.data.white_inventory) ? body.data.white_inventory : []).filter(isAdWhiteInventory).map((w) => w.id)
+  );
   const kept = [];
   for (const item of body.layout) {
-    if (item && EATS_DROP_TYPES.has(item.type)) {
+    if (item && (EATS_DROP_TYPES.has(item.type) || (item.type === "white_inventory" && adInventory.has(item.id)))) {
       dropIds.add(item.id);
       // Remove the section header that introduces the dropped widget.
       const prev = kept[kept.length - 1];
@@ -250,7 +270,7 @@ function handleEatsBdui(body) {
   let changed = false;
   for (const s of sections) {
     if (!isObj(s) || !EATS_BDUI_AD_SECTION.test(String(s.origType || ""))) continue;
-    if (Array.isArray(s.content)) s.content.forEach(neuterComponent);
+    if (Array.isArray(s.content)) s.content.forEach((c) => neuterComponent(c, body));
     changed = true;
   }
   if (stripActions(body, AD_ACTION_TYPES)) changed = true;
@@ -448,11 +468,11 @@ function handleBdui(body) {
     if (!isObj(s)) continue;
     if (isFeedSection(s)) {
       s.content = [];
-      if (s.loadingSnippet) neuterComponent(s.loadingSnippet);
-      if (s.errorSnippet) neuterComponent(s.errorSnippet);
+      if (s.loadingSnippet) neuterComponent(s.loadingSnippet, body);
+      if (s.errorSnippet) neuterComponent(s.errorSnippet, body);
       changed = true;
     } else if (AD_SECTION_TYPES.test(String(s.origType || ""))) {
-      if (Array.isArray(s.content)) s.content.forEach(neuterComponent);
+      if (Array.isArray(s.content)) s.content.forEach((c) => neuterComponent(c, body));
       changed = true;
     }
   }
@@ -466,7 +486,7 @@ function handleBdui(body) {
 function handleUrbanAds(body) {
   const sections = body && body.ui && body.ui.sections;
   if (!Array.isArray(sections)) return false;
-  for (const s of sections) if (isObj(s) && Array.isArray(s.content)) s.content.forEach(neuterComponent);
+  for (const s of sections) if (isObj(s) && Array.isArray(s.content)) s.content.forEach((c) => neuterComponent(c, body));
   stripActions(body, AD_ACTION_TYPES);
   return true;
 }

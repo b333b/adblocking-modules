@@ -63,7 +63,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Marketplace | — | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
 | Ozon MITM exclusions | — | from scratch | working |
 | Yandex Maps | 30.3.1 | from scratch | working, see [open issues](#maps-open-issues) |
-| Yandex Go | 4.19 (September 2026) | from scratch | working, see [open items](#go-open-items) |
+| Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
 
 ## Repository layout
 
@@ -177,13 +177,15 @@ Rules and rewrites apply globally whenever a module is enabled, not only to its 
 | `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |
 | `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |
 | `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |
+| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |
+| `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT |
 | `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |
 | `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes |
 | `yandex.ru/an/` | | | `reject-200` | `reject` |
-| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/(click\|jclck)` → `reject`; `clck/redir` (real link redirects) deliberately left alone |
+| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/click` → `reject`; `clck/redir` (real link redirects) and `clck/jclck` (used by Market search) deliberately left alone |
 
-With Maps enabled, its broader `yandex.ru/clck/` rule also catches `clck/redir`, which Go
-deliberately keeps working. Duplicate REJECT rules are harmless.
+With Maps enabled, its broader `yandex.ru/clck/` rule also catches `clck/redir` and `clck/jclck`,
+which Go deliberately keeps working (`jclck` since November 2026, for Market search). Duplicate REJECT rules are harmless.
 
 MegaFon's analytics rule set is always on (MegaFon's `analytics` switch only covers the app's
 own telemetry), so with MegaFon enabled Metrica and MyTracker are blocked for every app.
@@ -1025,9 +1027,9 @@ Standalone: Shadowrocket → Config → Modules → + →
 | Afisha | AdFox ad slots and page branding, Yandex ad-network loader, anti-adblock script | Rules |
 | Scooters | Promo tiles (points giveaways, subscription and minute-package upsells, story banners), promo block | Scooters screen filtered; nearest scooter, QR scan and menu kept |
 | Market | Hero ad carousel, "Реклама" tiles, sponsored product scrollboxes, ad banners and incuts in feeds and search, banner carousels on promo pages, header promo strip, fortune wheel entries and daily-reward pop-up, coins overlay in the video feed, FOMO sale badge, ad and onboarding pop-ups, bank card / Split / credit upsells in cart and profile, referral promos, "leave a review" nags | Stylesheet injected into Market pages; daily-reward response neutralised |
-| Eats | Ad pop-ups (main page, department and pharmacy screens), brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
+| Eats | Ad pop-ups (main page, department and pharmacy screens), ad placeholders between restaurant lists, brand-sponsored pharmacy shelves ("Выберите свой Durex" etc.), hero/recommendation/restaurant-collection ad banners, department ad carousels (food, pharmacy), promo banner shelf, gamification goals, "rate your order" widget, per-restaurant ad trackers | `layout-constructor` and `bdui-mobile` screens rewritten; `eats-communications` answered with `{}` |
 | Lavka | **Nothing**: Shadowrocket can't MITM Lavka (it answers with a captcha), so its ads stay: in-order hero carousel, Market hero banners, sponsored tiles, video banners, advertiser stories, "personal discounts" button | No MITM host, no script line; the `upsale/media-feed` and `informers` handlers in the script are inactive. See [Lavka](#go-applavkayandexnet-lavka-web-app) |
-| Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, video player logs, Firebase Analytics | Rules / URL rewrites |
+| Network | Market ad pixels and click logging, Yandex ad network (counters, loader, AdFox), Yandex anti-adblock script, Metrica (incl. counter subdomains and helpers), AppMetrica reports, Adjust, video player logs, web-view log shipping, Firebase Analytics and logging | Rules / URL rewrites |
 
 Service tiles, ride suggestions, the wallet widget, restaurant lists, grocery products and Market's organic product listings are not touched.
 
@@ -1052,6 +1054,8 @@ HAR captures (ProxyPin) contain personal data: phone number, home/work addresses
 
 Captures 2026-09-27, app 4.19, ProxyPin: main screen/Eats/Lavka; Market/scooters/taxi; Market deep dive; Eats deep dive; location bar; Transport/Delivery/Intercity/Chargers/Afisha/pharmacy.
 
+Re-checked 2026-11-09 (build 508055, two ProxyPin captures: main screen, Eats, Delivery, Lavka, Market home/search/card/cart/wishlist/profile). Same endpoints and shapes as before except the Eats `white_inventory` widget and urbanads' `divDataSharedId` (both below); every scripted response tested before/after, and only those two changed in the output. Market pages rendered in Chromium with the injected style: 0 visible "Реклама" labels (was up to 12 on home), only the sponsored `recomMediaAdv` scrollbox cards hidden, no ad labels in `render-lazy` / `resolve` fragments.
+
 Hosts: [tc.mobile.yandex.net](#go-tcmobileyandexnet-main-app-backend) · [go.integration.market.yandex.ru](#go-gointegrationmarketyandexru-market-web-view-inside-go) · [tc.eats.yandex.ru](#go-tceatsyandexru-eats-web-app-inside-go) · [app.lavka.yandex.net](#go-applavkayandexnet-lavka-web-app) · [Trackers](#go-trackers-rules)
 
 #### Go: tc.mobile.yandex.net (main app backend)
@@ -1072,7 +1076,7 @@ Hosts: [tc.mobile.yandex.net](#go-tcmobileyandexnet-main-app-backend) · [go.int
 - `POST /4.0/mlutp/v1/products/screen/chargers-discovery` — same shape as scooters (handled by the products route). Promo tiles: `personal_shortcut:energy_pass:…` ("Как сэкономить? С выгодным предложением"), `personal_shortcut:city_sub_buy:…` ("Кое-что новое / Яндекс Движ") → dropped via `PROMO_PERSONAL_KINDS`. Kept: QR scan, `passes:id` ("Заряжайтесь выгоднее" menu item), discounts, beacons, support, legal.
 - `POST /4.0/bdui/v1/masstransit/main` — Transport screen, flex/DivKit envelope. Sections: where_to, masstransit_suggests, masstransit_transport_card (Тройка), masstransit_tickets_v2, **ads** (`origType: MediaAdvHeroRenderData`, ORD/erid) → neutered by generic `handleBdui` (`AD_SECTION_TYPES`: MediaAdv|SdkBanner|MediaBanners|Madv|CommonBannersWidget) + Madv pop-up actions stripped.
 - `POST /4.0/bdui/v1/taxi/tracking` — sheet under the ride card during an active order (seen Oct 2026, status `driving`). Request body: `order_status`, `order_tariff_class`, `userLocations`, `payment_info`, `media_size_info`; pages 2..n add a top-level `sections: [{raw: {id: feed}, refreshParams: {pagination_token}}]`. Response: flex/DivKit envelope, `scaffold.type: TrackedScrollScaffold`, and **one** section, `feed` (`feed_section`, 17–19 items: `generic-offer-v2` Market cards mostly carrying ad markers/erid, `shelf`, `media-adv-banner-single`/`-double`). `actions.onApply` sets the global div variable `need_to_hide_feed_container: false`. Handling (generic `handleBdui`): feed sections emptied and snippets neutered like the main screen; `need_to_hide_feed_container` set to `true` (kill switch `HIDE_TRACKING_FEED_CONTAINER`). The ride card (driver, car, status, cancel) is native, from `3.0/taxiontheway`; its `promotions`/`brandings` were empty and it is not touched. Sheet heights per status come from the `superapp_order_details_feed` experiment (left alone; disabling it is the fallback if the empty sheet looks wrong). Related, not touched: `mlutp/v1/inapp-widgets` (order widget), `3.0/orderchat`, `4.0/orderperformerinfo`.
-- `POST /4.0/urbanads/sdk` — body `{format: hero|popup, page: DostavkaMainPage|feedback}`; response is an ad unit (`SdkBannerRenderData` → `SdkBannerCarousel`, ORD legal info, "why this ad" kebab popup) → every section neutered.
+- `POST /4.0/urbanads/sdk` — body `{format: hero|popup, page: DostavkaMainPage|feedback}`; response is an ad unit (`SdkBannerRenderData` → `SdkBannerCarousel`, ORD legal info, "why this ad" kebab popup) → every section neutered. Since Nov 2026 the component also carries `divDataSharedId`, pointing at a full copy of the ad in `shared.divData`; `neuterComponent()` empties that copy and drops the pointer (any neutered component, not only urbanads).
 - `POST /4.0/inapp-communications/v2/communications-masstransit` — `offers.objects_over_map.items[]` (campaign badge "Когда придёт автобус", `analytics_payload.campaign_id`, `yandextaxi://banner?id=`) → filtered with `isPromoMapObject`, `priority` synced; `offers.promoblocks.items` → emptied. Same handler covers any `inapp-communications/*`.
 - `POST /4.0/inapp-communications/v1/delivery-promotions` — `banners.banner_list[]` story banners on the Delivery form → emptied.
 - `POST /4.0/cargo-c2c/v1/dashboard/content` — Delivery dashboard `sections[].widgets[]`; widget `type: ads-banner` (`ads_banner_settings: {type: urban-ads, page: DostavkaMainPage}`) → removed. Courier/PVZ/cargo tiles kept.
@@ -1103,6 +1107,8 @@ In any `typed_experiments.items`: `new_year_splash_2025`, `dynamic_splash_screen
 - `POST .../eats/v1/layout-constructor/v1/layout` — `layout[]` (order: `{id, type}`) + `data{type: [widgets]}`. Dropped types: `madv_popup_communications`, `madv_hero_banners`, `banners_carousel`, `user_goals`, `mini_feedback` (+ the `header` directly before each). Almost every place has `features.advertisement` (em.market.ya.ru pixels, `adv_context`) → stripped, place kept. Removing all "ad" places would empty the catalogue.
   - Pharmacy (`sku_apteka`) page on the same endpoint: `madv_popup_communications` (`market_popup_communication_apteki`), `madv_hero_banners` (`…_hero_apteki`) dropped as before; `sku_upsell_promo_carousel` (template `sexy_polka`, collection slugs like `…_durex_polka_YA`, `…_TeraFlyu_polka_YA`: brand-paid shelves) → dropped. Plain `sku_upsell` shelves ("Всегда пригодится", collections) kept.
   - Same endpoint serves restaurant collections (`view: {type: collection, slug: restaurants}`) and quick filters (`filters_v2`); extra ad templates seen there: `madv_banners_hero_eda_rest` (type `madv_hero_banners`, dropped), `Place_list_with_ads`, `you_ordered_with_ads_first_cpa_podm` (places kept, trackers stripped). 21 responses in the Eats capture: 0 "Реклама"/media-adv/em.market/erid left after rewrite.
+  - Nov 2026: new layout type `white_inventory`, ad placeholders the web app fills through its `fastfood-advertisement` component (`yastatic.net/s3/eda-front/www/fastfood/fastfood-advertisement/`); each data item is `{id, template_name, payload: {advertisement: {view_urls: [media-adv pixel]}}}`. Templates seen: `madv_banners_eda_recommendation`, `madv_banners_eda_recommendation_8` (between the restaurant lists) and `market_popup_communication_yellow` (ad pop-up, in the first slot where `madv_popup_communications` used to be). Dropped when `template_name` matches `madv|market_popup|adv` or the item has `payload.advertisement` (`isAdWhiteInventory()`), so a non-ad use of the type would survive.
+  - The Eats web app's own config in its index page (`tc.eats.yandex.ru/4.0/eda-superapp/`, ~1.3 MB HTML) carries `"advertisement":{"enabled":true,…}` and similar front-end switches; not touched (not needed while the widgets are removed server-side).
 - `POST .../eats/v1/bdui-mobile/v1/collection?collection=<slug>` — department screens (`food_department`, `pharm_department`). Flex/DivKit envelope like the superapp layout (`ui.sections[]`, `actions`). Ads: section `origType: CommonBannersWidget` (banner carousel with "Реклама", `AdvertisementAction`, media-adv pixels) → neutered; `actions.onAwake.actions[]` item `type: MadvPopupCommunicationsAction` (`madvPopupData.bottomsheets[]`, ORD creative + media-adv pixels; e.g. pharmacy promo sheet) → removed (generic `stripActions`, also applied to superapp layouts). Remaining sections: ViewHeaderRenderData, SearchBarRenderData, HotlinksWidgetRendererData, PlaceMultilineRenderData — kept.
 - `POST .../eats-communications/v1/communications` — `{}` observed as a valid response → `reject-dict`.
 - `welcome-features`, `notifications-center` — empty in capture; not touched.
@@ -1137,9 +1143,9 @@ Notes on the inactive handlers, kept in case Lavka can be MITM'd again (that nee
 | Group | Hosts / paths |
 |---|---|
 | Ad network / AdFox / anti-adblock | `an.yandex.ru` (ad network meta/mapuid), `*.adfox.ru` (AdFox; Afisha `adfoxBrandingId` page skins and slots), `yandex.ru/ads/…` (`ads/system/context.js`, 430 KB ad-network loader on Afisha), `static-mon.yandex.net` (`static/main.js`/`optional.js?pid=yandex_afisha`, obfuscated `eval` anti-adblock loader) |
-| Ad pixels / click logging | `media-adv.market.yandex.ru/events`, `em.market.ya.ru/<id>`, `yandex.ru/an/rtbcount/...`, `amc.yandex.ru/show`, `yandex.ru/clck/click` (POST, ~95/session), `yandex.ru/clck/jclck`, `adfstat.yandex.ru/image/market`, `market-baobab.yandex.ru/safeclick/json` (~70/session) |
-| Analytics | `mc.yandex.ru`, `*.mc.yandex.ru` (numbered counter subdomains, `solid.ws` websocket, `metrika/advert.gif`), `mdd.yandex.net`/`hdrc.yandex.net` (Metrica helpers), `report.appmetrica.yango.com`, `log.strm.yandex.ru`, `app-analytics-services.com` (Firebase), `icmp0.ru` (network probe from Market page), `csp.yandex.net` (CSP reports) |
-| Seen, not blocked | `graph.facebook.com` (global rule would break FB login elsewhere), `api.browser.yandex.ru/uma_proto` |
+| Ad pixels / click logging | `media-adv.market.yandex.ru/events`, `em.market.ya.ru/<id>`, `em.market.yandex.ru/<id>` (same pixel, Nov 2026), `wcm.weborama-tech.ru` (ad verification, Nov 2026), `yandex.ru/an/rtbcount/...`, `amc.yandex.ru/show`, `yandex.ru/clck/click` (POST, ~95/session), `adfstat.yandex.ru/image/market`, `market-baobab.yandex.ru/safeclick/json` (~70/session). `yandex.ru/clck/jclck` is left alone since Nov 2026: Market search uses it |
+| Analytics | `mc.yandex.ru`, `*.mc.yandex.ru` (numbered counter subdomains, `solid.ws` websocket, `metrika/advert.gif`), `mdd.yandex.net`/`hdrc.yandex.net` (Metrica helpers), `report.appmetrica.yango.com`, `log.strm.yandex.ru`, `app-analytics-services.com` (Firebase), `icmp0.ru` (network probe from Market page), `csp.yandex.net` (CSP reports); added Nov 2026: `analytics.adjust.com` (Adjust SDK in the app: `/session`, `/event`, `/attribution`, ~180 requests per capture), `firebaselogging-pa.googleapis.com` (Firebase transport logs), `ingest.monium.yandex` (OpenTelemetry log shipping from the web views) |
+| Seen, not blocked | `graph.facebook.com` (global rule would break FB login elsewhere), `api.browser.yandex.ru/uma_proto`, `clck.yandex.ru/clck/click` (Market web view; the host also serves real redirect links and isn't MITM'd) |
 
 ### Go open items
 
@@ -1153,6 +1159,7 @@ Notes on the inactive handlers, kept in case Lavka can be MITM'd again (that nee
 - Afisha web view (`afisha.yandex.ru`, opened from the tile with `promo_mode=normal`): lazy chunks `PromoBottomSheet`, `PromoFullscreen-component`, `ChatBotWidget` loaded but their data source was not seen (not in `api/graphql` responses); likely AdFox-driven and gone with the rules — unverified. Event `promoImage*`/`promoVideo*` fields in graphql are event artwork, not ads.
 - Service landings opened deliberately, not touched: `care.yandex.ru/go/home` (insurance "unique selling propositions" cards), `rentacar.yandex.ru` (own `promoBlocks`, e.g. motorcycle promo), Eats pharmacy `pharmacies-media/v1/articles` (health journal cards).
 - Not blocked: `api.browser.yandex.ru/uma_proto` (browser-engine telemetry; would need an extra MITM host).
+- Experiment `places_advert_media_card_settings` (`{enabled: true, sources: [main_places_search_list]}`) arrives in `3.0/zoneinfo`, which no script edits: likely advertised places with media cards in the destination search list. Not seen on screen; switching it off would need a `zoneinfo` script line (≈90 KB response).
 - Lavka: not handled, because Shadowrocket's MITM triggers a captcha (see the Lavka section). If that ever changes, a reject on `adv/v1/banners` and `adv/v1/get-banners` covers the hero carousels; otherwise the unused Lavka handlers could be dropped from the script.
 - Location-permission bar fix is experimental (on since Oct 2026) — see next section.
 
