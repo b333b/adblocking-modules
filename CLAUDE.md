@@ -12,16 +12,16 @@ one top-level section per app.
 
 ## Contents
 
-| Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) |
-|---|---|---|---|---|---|
-| [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) |
-| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) |
-| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) |
-| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) |
-| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) · [Hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) |
-| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) |
-| [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) |
-| | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |
+| Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) | [Yandex Eats](#yandex-eats) |
+|---|---|---|---|---|---|---|
+| [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) | [App facts](#eats-app-facts) |
+| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) | [What it removes](#eats-what-it-removes) |
+| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) | [Module settings](#eats-module-settings) |
+| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) | [Endpoint map](#eats-endpoint-map) |
+| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) · [Hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) | [Deliberately not touched](#eats-deliberately-not-touched) |
+| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) | [Open items](#eats-open-items) |
+| [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) | [Testing](#eats-testing) · [Privacy](#eats-privacy) |
+| | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |  |
 
 ---
 
@@ -53,6 +53,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Marketplace | — | [`Ozon/ozon-marketplace.sgmodule`](Ozon/ozon-marketplace.sgmodule) | [`Ozon/Script/ozon-marketplace.js`](Ozon/Script/ozon-marketplace.js) | `ozon-mp-composer` | `api.ozon.ru`, with `skip-server-cert-verify = true` ([why](#ozon-hosts-that-must-not-be-decrypted)) |
 | Ozon MITM exclusions | — | [`Ozon/ozon-mitm-exclude.sgmodule`](Ozon/ozon-mitm-exclude.sgmodule) | none | none | excludes `api.finance.ozon.ru`, `check.bank.ozon.ru` from decryption |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
+| Yandex Eats | `ru.foodfox.client` | [`Yandex/yandex-eats.sgmodule`](Yandex/yandex-eats.sgmodule) | [`Yandex/Script/yandex-eats.js`](Yandex/Script/yandex-eats.js) | `yandexeats` | `eda.yandex.ru` |
 | Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka answers with a captcha when Shadowrocket MITMs it, so Lavka is [not handled](#go-applavkayandexnet-lavka-web-app)) |
 
 | App | Last tested on | Written | Status |
@@ -63,6 +64,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Marketplace | build 1050 (capture, November 2026) | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
 | Ozon MITM exclusions | — | from scratch | working |
 | Yandex Maps | 31.1.5 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
+| Yandex Eats | 26.43.0 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#eats-open-items) |
 | Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
 
 ## Repository layout
@@ -84,8 +86,10 @@ Ozon/Script/ozon-bank-debug.js     Ozon Bank debug script
 Ozon/Script/ozon-marketplace.js    Ozon Marketplace script
 Yandex/yandex-maps.sgmodule        Yandex Maps module
 Yandex/yandex-go.sgmodule          Yandex Go module
+Yandex/yandex-eats.sgmodule        Yandex Eats module (settings in #!arguments)
 Yandex/Script/yandex-maps.js       Yandex Maps script (protobuf + JSON)
 Yandex/Script/yandex-go.js         Yandex Go script
+Yandex/Script/yandex-eats.js       Yandex Eats script
 Dixy/Script/                       Dixy (no module yet; .gitkeep only)
 ```
 
@@ -180,22 +184,26 @@ Facts that apply to every module.
 
 Rules and rewrites apply globally whenever a module is enabled, not only to its app.
 
-| Item | Avito | MegaFon | Yandex Maps | Yandex Go |
-|---|---|---|---|---|
-| `amc.yandex.ru` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |
-| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | |
-| `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |
-| `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |
-| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |
-| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |
-| `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT |
-| `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |
-| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes |
-| `yandex.ru/an/` | | | `reject-200` | `reject` |
-| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/click` → `reject`; `clck/redir` (real link redirects) and `clck/jclck` (used by Market search) deliberately left alone |
+| Item | Avito | MegaFon | Yandex Maps | Yandex Go | Yandex Eats |
+|---|---|---|---|---|---|
+| `amc.yandex.ru` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |  |
+| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | | `DOMAIN` REJECT |
+| `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |  |
+| `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |  |
+| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |  |
+| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
+| `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
+| `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |  |
+| `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `log.strm.yandex.ru` | | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
+| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes | no |
+| `yandex.ru/an/` | | | `reject-200` | `reject` |  |
+| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/click` → `reject`; `clck/redir` (real link redirects) and `clck/jclck` (used by Market search) deliberately left alone |  |
 
 With Maps enabled, its broader `yandex.ru/clck/` rule also catches `clck/redir` and `clck/jclck`,
 which Go deliberately keeps working (`jclck` since November 2026, for Market search). Duplicate REJECT rules are harmless.
+
+Yandex Eats (`eda.yandex.ru`) and Yandex Go's Eats screen (`tc.eats.yandex.ru`) share a backend and
+match different hosts, so both modules can be on together without two scripts matching one URL.
 
 MegaFon's analytics rule set is always on (MegaFon's `analytics` switch only covers the app's
 own telemetry), so with MegaFon enabled Metrica and MyTracker are blocked for every app.
@@ -1198,3 +1206,137 @@ Shown at the top of the **main screen on launch** when iOS location access is of
 - Fix: `clearPositionClarification()` sets `should_clarify_position: false` and drops only `show_point_clarification_screen`/`bad_coord_provider` actions, in finalsuggest responses (`yandexgo-finalsuggest` script line) and in `shared.finalsuggest` of the superapp layout. This reproduces the post-Taxi state the app already reaches on its own. Kill switch: `HIDE_LOCATION_BAR` constant at the top of that block — currently `true` (turned on in Oct 2026; it was `false` before).
 - Status: **unverified on device**. If the bar persists, the trigger is the `zero_km` provider on the client and nothing server-side can hide it → revert (set the constant to false or remove the script line). Side effect to watch: the Taxi "Куда подать машину?" confirmation no longer appears at launch with location off; pickup defaults to the suggested address, same as after the manual Taxi round-trip.
 - History: all five earlier captures searched for the four strings (decoded JSON, HTML, i18n keysets, yastatic JS, NBSP-tolerant) — none delivered over the network. `explaining_location_permission_screen_with_agreement` experiment (GDPR permission explainer) is unrelated and left alone. Workaround if the fix fails: iOS Settings → Yandex Go → Location "While Using".
+
+---
+
+## Yandex Eats
+
+Shadowrocket module that strips ads and promo from the standalone Yandex Eats iOS app («Яндекс Еда»).
+Written from scratch, from a ProxyPin capture of app 26.43.0 (November 2026: main page, restaurant
+collection, sushi filter). Every content switch is a module argument, like
+[Ozon Marketplace](#ozon-marketplace-module-settings).
+
+Files:
+- [`Yandex/yandex-eats.sgmodule`](Yandex/yandex-eats.sgmodule) — `#!arguments`, tracker rules, communications reject, `Accept-Encoding` rewrite, one script entry (`yandexeats`), MITM host
+- [`Yandex/Script/yandex-eats.js`](Yandex/Script/yandex-eats.js) — single http-response script, routed by URL; every handler fails open. Exports `handleLayout`, `handleBdui`, `handleWelcome` when `module` exists (Node tests)
+
+### Eats app facts
+
+- Bundle `ru.foodfox.client` (user agents `ios(26.43.0)` for the API, `YandexEats/…` for images and pixels,
+  `ru.foodfox.client/…` for the mob-manager config); deep-link scheme `eda.yandex://`.
+- API host `eda.yandex.ru`, paths `/eats/v1/…`. The same backend serves Yandex Go's Eats screen on
+  `tc.eats.yandex.ru/4.0/eda-superapp/eats/v1/…`: the layout format and widget types are the same, and the
+  handlers are ported from [Go's](#go-tceatsyandexru-eats-web-app-inside-go). No certificate pinning seen.
+- The app asks for `br, gzip, deflate`; the server answers compressed (`Content-Length` ≈ 1/8 of the body).
+  The module forces `Accept-Encoding: gzip` on scripted endpoints, as Avito does.
+- No `Cache-Control`/`ETag` on layout responses: a change should show on the next launch.
+- Screens are server-driven by `layout-constructor/v1/layout`: `layout[]` (`{id, type, payload}`, order on
+  screen) and `data{}` keyed by type (sometimes pluralised: `headers`, `places_v2_lists`, `filters_v3s`),
+  each an item `{id, template_name, payload}` or a list of them; items match layout entries by `id`.
+- `launch/v2/native` (~560 KB) carries the profile (passport uid, eater uuid, name) plus ~470 configs and
+  ~375 experiments. Not edited (see [deliberately not touched](#eats-deliberately-not-touched)).
+
+### Eats: what it removes
+
+| Block | Layout type / template | Setting |
+|---|---|---|
+| Hero ad carousels (main page top, between the restaurant lists, restaurant collection; advertiser legal names, media-adv pixels, Market video creatives) | `madv_hero_banners` (`madv_banners_carousel_mainpage_hero_1`, `madv_banners_eda_recommendation(_8)`, `madv_banners_hero_eda_rest`) | `ad_banners` |
+| Ad slots between the lists | `white_inventory` items with an ad template or `payload.advertisement` (`madv_banners_eda_recommendation`) | `ad_banners` |
+| Ad pop-up over the restaurant list ("Чёрная пятница в доставке…", seen with a fast-food advertiser) | `madv_popup_communications` (`madv_popup_hub_restaurants_eats`) | `ad_popups` |
+| Ad pop-up slot on the main page | `white_inventory` `market_popup_communication_yellow` | `ad_popups` |
+| Marketing pop-up at launch | `welcome-features` `popup_window` (type `communications`) reset to its empty `payload: {}` | `ad_popups` |
+| Ad bottom sheet / ad carousels on department screens (from Go, not seen in this app yet) | `bdui-mobile` `MadvPopupCommunicationsAction`, sections `*Banner*`/`Madv`/`Advert` | `ad_popups` / `ad_banners` |
+| Promo-code banners (e.g. `eda.yandex://promocode?value=…`) | `banners_carousel` (`widget_banners_growth_shelf`) + its header | `promo_banners` |
+| Brand-paid shelves (pharmacy, shops; from Go, not seen here) | `sku_upsell_promo_carousel` | `sponsored_shelves` |
+| "Ваши цели" gamification goals | `user_goals` (`personal_goals_v2_main`) + its header | `goals` |
+| "Rate your order" widget (from Go, not seen here) | `mini_feedback` | `feedback` |
+| Ad pixels and ad labels on restaurant cards and discounted dishes | `features.advertisement` / `advertisement` blocks (`links.view_url`, `click_url`, `view_urls`, `adv_context`, `icon`) deleted; the card stays | `ad_trackers` |
+| Marketing communications | `eats-communications/v1/communications` → `reject-dict` (`{}` is the normal empty reply) | always on |
+| Trackers | rules: `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `wcm.weborama-tech.ru`, `report.appmetrica.yandex.net`, `analytics.adjust.com`, `log.strm.yandex.ru` | always on |
+
+A dropped widget takes the `header` directly before it along (the section title). Inline ad slots
+(`white_inventory`) never do: they have no header of their own, so the one before them belongs to a list.
+
+Restaurant cards are almost all "ad" cards (templates `Place_list_with_ads`, `you_ordered_with_ads_first`,
+`netflix_scenario_fast_eta_places_w_ad`, `quality_rests_eats_cpa_*`): paid placement decides the order.
+Removing those cards would empty the catalogue, so only their ad block is stripped. No visible
+"Реклама" text was in any captured response; the label is drawn by the app from the ad block
+(`eda_advert_new_nameplate` config: "Advertising is hidden" toast, hide button).
+
+### Eats module settings
+
+```
+argument=ad_banners:{{{ad_banners}}}&ad_popups:{{{ad_popups}}}&promo_banners:{{{promo_banners}}}&sponsored_shelves:{{{sponsored_shelves}}}&goals:{{{goals}}}&feedback:{{{feedback}}}&ad_trackers:{{{ad_trackers}}}&extra:{{{extra}}}
+```
+
+| Setting | Default | Effect when `true` |
+|---|---|---|
+| `ad_banners` | `true` | hero ad carousels, inline ad slots, department-screen ad carousels |
+| `ad_popups` | `true` | ad pop-ups (layout, `white_inventory`, `welcome-features`, department screens) |
+| `promo_banners` | `true` | promo-code banner shelf |
+| `sponsored_shelves` | `true` | brand-paid product shelves |
+| `goals` | `true` | gamification goals |
+| `feedback` | `true` | "rate your order" widget |
+| `ad_trackers` | `true` | ad blocks on restaurant cards and dishes (pixels, labels) |
+| `extra` | `Add_components_here` (placeholder, drops nothing) | extra layout types to drop, `+` or spaces, never commas. Kept by default but listed in `#!arguments-desc`: `retail_cross_brand_carousel` (shop discount shelf "Скидки от 20% на готовую еду"), `dish_centric_edge_carousel` (discounted dishes, "Хит дня"), `divkit` (service hub). Never add `places_v2_list`, `places_v2_medium_carousel`, `places_v2_ultima_list`, `mini_places_carousel` (real restaurants and shops) |
+
+A switch is off only when its value is `false`, `0`, `no` or `off`, in any case. A missing key, an
+unsubstituted placeholder or a cut argument counts as on. A JSON object is also accepted.
+
+### Eats endpoint map
+
+All on `https://eda.yandex.ru`.
+
+| Endpoint | What it delivers | Handling |
+|---|---|---|
+| `POST /eats/v1/layout-constructor/v1/layout` | main page (`selected_state: online`), restaurant collection (`view: {type: collection, slug: restaurants}`), quick filters (`filters_v2`) | script `handleLayout` |
+| `POST /eats/v1/layout-constructor/v1/callback` | lazy widget refresh (`triggers.on_show[].replace_widget`); only `mini_tracking` (active order) seen | not touched |
+| `POST /eats/v1/bdui-mobile/v1/*` | department screens (pattern from Go; not in this capture) | script `handleBdui` |
+| `POST /eats/v1/eats-launch/v1/welcome-features` | `popup_window`, `loading_screen`, `corp_balance`, selected address with entrance/floor/apartment | script `handleWelcome` (pop-up slot only) |
+| `POST /eats/v1/eats-communications/v1/communications` | marketing communications; `{}` in the capture | `reject-dict` |
+| `POST /eats/v1/launch/v2/native` | profile, configs, experiments | not touched |
+| `POST /eats/v1/launch/v1/loading-screen` | `{}` in the capture | not touched |
+| `POST /eats/v1/metrics` | first-party metrics (204) | not touched (may feed delivery-time estimates) |
+| `GET /images/…` | food photos | not touched |
+
+### Eats deliberately not touched
+
+- `launch/v2/native` experiments. Candidates if a nag shows up: `eda_front_tabbar_onboarding` (coupons
+  onboarding), `eda_front_onboarding_push_notification`, `yango_front_rate_app`, `eda_front_referral_onboarding_screen`,
+  `eda_front_tracking_game_with_promo`, `eda_front_order_tracking_banners` (off already). Editing it means
+  shipping the profile through a script; keep that minimal.
+- `dish_centric_edge_carousel` ("Хит дня" dish discounts), `retail_cross_brand_carousel` (shop discount
+  shelf), discount chips on cards ("Free delivery", "−50% by Pay card"): real offers. Available through `extra`.
+- Cart, multi-carts, addresses, wallet (`authproxy.prod.yb.yandex.net`), Plus (`api.plus.yandex.net`,
+  `egw.home-gateway.plus.yandex.net`), Passport, `mob-manager-aws.mob.taxi.yandex.net`, `startup.mobile.yandex.net`.
+- `yandex.ru/clck/click` (~10 POSTs per session) needs `yandex.ru` in MITM; left to the Go and Maps modules.
+- `avatars.mds.yandex.net/get-market-adv/` (ad creative images, 17 in the capture): no longer requested once
+  the banners are gone; blocking them would need the image host in MITM.
+- `api.browser.yandex.ru/uma_proto`, `network-lc.ru` (unknown; the request failed in the capture).
+
+### Eats open items
+
+- Not yet confirmed on device: whether `eda.yandex.ru` passes Shadowrocket's own certificate check when
+  decrypted (see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)); whether the ad pop-up slot
+  and hero banners leave a gap.
+- Not captured: restaurant menu page, search, shops/pharmacy departments (`bdui-mobile`), order tracking,
+  a filled `welcome-features` pop-up, a filled `eats-communications` reply.
+- `market_popup_communication_yellow` is filled by the app itself (no other response in the capture
+  carries its creative); if an ad pop-up still shows, capture with the module on and look for its source.
+
+### Eats testing
+
+Throwaway Node harness in the scratchpad (never in the repo): reads the module, fills the `#!arguments`
+defaults into `argument=`, checks the script line splits cleanly on commas, runs the script on each captured
+response the pattern matches and compares the result with the original minus the dropped widgets and ad
+blocks. On the 26.43.0 capture: 4 layout responses edited, identical to that expectation, every restaurant
+and shop slug still present (414 / 116 / 18 / 200 on the main page), 0 `advertisement`, `em.market`,
+`media-adv` or `madv` strings left; with every switch off, nothing changes; `welcome-features` (empty pop-up)
+untouched; empty, non-JSON, `null` and wrong-shape bodies passed through; synthetic `bdui-mobile` and filled
+`welcome-features` bodies edited as described.
+
+### Eats privacy
+
+Captures of this app contain the delivery address with entrance, floor, apartment and intercom code, exact
+coordinates, name, passport uid, eater uuid, device id, order numbers and carts, session ids and cookies.
+Never commit captures or anything copied from them; keep examples synthetic.

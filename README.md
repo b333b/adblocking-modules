@@ -15,13 +15,14 @@ HTTPS decryption must be on and the Shadowrocket CA certificate trusted (Setting
 | Ozon Marketplace | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-marketplace.sgmodule) |
 | Ozon MITM exclusions | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-mitm-exclude.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Ozon/ozon-mitm-exclude.sgmodule) |
 | Yandex Maps | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-maps.sgmodule) |
+| Yandex Eats | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-eats.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-eats.sgmodule) |
 | Yandex Go | [https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule](https://raw.githubusercontent.com/b333b/adblocking-modules/refs/heads/main/Yandex/yandex-go.sgmodule) |
 
 After an update, refresh the module in Shadowrocket, then force-quit and relaunch the app.
 
 ## Notes
 
-- MegaFon, Ozon Bank and Ozon Marketplace have switches in the module's settings. MegaFon changes may only show from the second launch.
+- MegaFon, Ozon Bank, Ozon Marketplace and Yandex Eats have switches in the module's settings. MegaFon changes may only show from the second launch.
 - A module's rules apply to all traffic while it is on, not only to its app.
 - Ozon Marketplace turns off Shadowrocket's server-certificate check (`api.ozon.ru` fails it otherwise). This applies to every decrypted host, from every module and your own config, while it is on.
 - Ozon MITM exclusions keeps two Ozon Bank hosts out of HTTPS decryption. Install it if another config decrypts all of `*.ozon.ru`.

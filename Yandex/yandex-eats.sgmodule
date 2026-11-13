@@ -1,0 +1,32 @@
+#!name=[AdBlock] Yandex Eats
+#!desc=Removes ad banners, ad pop-ups, promo-code banners, goals and ad trackers from the Yandex Eats app
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-11-13 23:57 MSK
+#!arguments=ad_banners:true,ad_popups:true,promo_banners:true,sponsored_shelves:true,goals:true,feedback:true,ad_trackers:true,extra:Add_components_here
+#!arguments-desc=Each setting is true or false, except extra.\n\nad_banners — ad banner carousels on the main page, restaurant lists and department screens, ad slots between the lists\nad_popups — ad pop-ups over the main page and restaurant lists\npromo_banners — promo-code banner shelf\nsponsored_shelves — brand-paid product shelves (pharmacy, shops)\ngoals — gamification goals ("Ваши цели")\nfeedback — "rate your order" widget\nad_trackers — ad pixels and ad labels on restaurant cards and discounted dishes (the cards stay)\nextra — extra layout widget types to drop, separated by + or spaces, never commas\n\nTypes seen on the main page that are kept by default:\nretail_cross_brand_carousel — shop discount shelf ("Скидки от 20% на готовую еду")\ndish_centric_edge_carousel — discounted dishes ("Хит дня")\nplaces_v2_medium_carousel — restaurant carousels (real restaurants)\nmini_places_carousel — shops and pharmacies row\ndivkit — service hub at the top\n\nCaution: places_v2_list, places_v2_medium_carousel and mini_places_carousel carry the real restaurants and shops.
+
+[Rule]
+# Ad impression / click pixels
+DOMAIN,media-adv.market.yandex.ru,REJECT
+DOMAIN,em.market.ya.ru,REJECT
+DOMAIN,em.market.yandex.ru,REJECT
+DOMAIN,wcm.weborama-tech.ru,REJECT
+# Analytics: AppMetrica, Adjust, video player logs
+DOMAIN,report.appmetrica.yandex.net,REJECT
+DOMAIN,analytics.adjust.com,REJECT
+DOMAIN,log.strm.yandex.ru,REJECT
+
+[URL Rewrite]
+# In-app marketing communications; "{}" is the normal empty reply
+^https:\/\/eda\.yandex\.ru\/eats\/v1\/eats-communications\/v1\/communications - reject-dict
+
+[Header Rewrite]
+# The app asks for br first; force gzip on scripted endpoints so the body is decodable
+^https:\/\/eda\.yandex\.ru\/eats\/v1\/(layout-constructor\/v1\/layout|bdui-mobile\/v1\/|eats-launch\/v1\/welcome-features) header-replace Accept-Encoding gzip
+
+[Script]
+yandexeats = type=http-response,pattern=^https:\/\/eda\.yandex\.ru\/eats\/v1\/(layout-constructor\/v1\/layout|bdui-mobile\/v1\/|eats-launch\/v1\/welcome-features),requires-body=1,max-size=-1,timeout=30,argument=ad_banners:{{{ad_banners}}}&ad_popups:{{{ad_popups}}}&promo_banners:{{{promo_banners}}}&sponsored_shelves:{{{sponsored_shelves}}}&goals:{{{goals}}}&feedback:{{{feedback}}}&ad_trackers:{{{ad_trackers}}}&extra:{{{extra}}},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-eats.js
+
+[MITM]
+hostname = %APPEND% eda.yandex.ru
