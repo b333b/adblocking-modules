@@ -1,8 +1,8 @@
 #!name=[AdBlock] Avito
-#!desc=Removes ads/promos (home feed, search, favorites, item card, my listings), blocks ad-tech and telemetry hosts
+#!desc=Removes ads/promos (home feed, search, favorites, item card, my listings, profile loan offer), blocks ad-tech and telemetry hosts
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
-#!date=2026-10-14 05:06 MSK
+#!date=2026-11-17 22:30 MSK
 
 [Rule]
 # Ad exchanges and ad-tech pixels (host-level, no MITM needed)
@@ -19,6 +19,7 @@ DOMAIN,analytics.adjust.com,REJECT
 DOMAIN,analytics.adjust.io,REJECT
 DOMAIN,report.appmetrica.yandex.net,REJECT
 DOMAIN,firebaselogging-pa.googleapis.com,REJECT
+DOMAIN,crashlyticsreports-pa.googleapis.com,REJECT
 DOMAIN,app-analytics-services.com,REJECT
 DOMAIN,public-api.uxfeedback.ru,REJECT
 
@@ -35,10 +36,10 @@ DOMAIN,public-api.uxfeedback.ru,REJECT
 
 [Header Rewrite]
 # The app asks for zstd first; force gzip on script-rewritten endpoints so the body is decodable
-^https?:\/\/app\.avito\.ru\/api\/\d+\/(main\/items|items|items\/\d+\/banners|favorites\/items\/list|card\/items\/\d+|internalBannerRotation\/banners|serp\/profile\/items\/banner)(\?|$) header-replace Accept-Encoding gzip
+^https?:\/\/app\.avito\.ru\/api\/\d+\/(main\/items|items|items\/\d+\/banners|favorites\/items\/list|card\/items\/\d+|internalBannerRotation\/banners|serp\/profile\/items\/banner|profile\/finance)(\?|$) header-replace Accept-Encoding gzip
 
 [Script]
-avito-ads = type=http-response,pattern=^https?:\/\/app\.avito\.ru\/api\/\d+\/(main\/items|items|items\/\d+\/banners|favorites\/items\/list|card\/items\/\d+|internalBannerRotation\/banners|serp\/profile\/items\/banner)(\?|$),requires-body=true,max-size=3145728,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Avito/Script/avito.js
+avito-ads = type=http-response,pattern=^https?:\/\/app\.avito\.ru\/api\/\d+\/(main\/items|items|items\/\d+\/banners|favorites\/items\/list|card\/items\/\d+|internalBannerRotation\/banners|serp\/profile\/items\/banner|profile\/finance)(\?|$),requires-body=true,max-size=3145728,timeout=10,script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Avito/Script/avito.js
 
 [MITM]
 hostname = %APPEND% app.avito.ru, www.avito.ru, stats.avito.ru

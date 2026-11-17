@@ -1,7 +1,8 @@
-// Last edited: 2026-09-29 20:37 MSK
+// Last edited: 2026-11-17 22:30 MSK
 /*
  * Avito ad cleanup — Shadowrocket http-response script
- * Endpoints are mapped from a ProxyPin capture of Avito iOS 230.1 (app id online.anero.app).
+ * Endpoints are mapped from ProxyPin captures of Avito iOS 230.1 (app id online.anero.app;
+ * re-checked November 2026).
  * Every handler fails safe: on any parse error or unknown shape the original body is passed through.
  */
 
@@ -38,6 +39,12 @@ const CARD_HIDE_IDS = new Set([
   "fmpBanner",
 ]);
 const CARD_HIDE_COMPONENT_PREFIXES = ["alfa_bank_banner"];
+
+// Profile "Финансы" widget (/api/N/profile/finance): widget.features is a list of tile rows.
+// Tiles dropped by id; a row left empty is dropped too. Wallet and bonuses stay.
+const FINANCE_DROP_IDS = new Set([
+  "installmentsPromo", // "Деньги взаймы — и ещё 5 продуктов": loans / credit upsell
+]);
 
 // ---- helpers --------------------------------------------------------------
 
@@ -136,6 +143,21 @@ function itemBanners(o) {
   return true;
 }
 
+function profileFinance(o) {
+  const w = o.success && o.success.widget;
+  if (!w || !Array.isArray(w.features)) return false;
+  let changed = false;
+  const rows = [];
+  for (const row of w.features) {
+    if (!Array.isArray(row)) { rows.push(row); continue; }
+    const kept = row.filter((t) => !(t && FINANCE_DROP_IDS.has(t.id)));
+    if (kept.length !== row.length) changed = true;
+    if (kept.length) rows.push(kept);
+  }
+  if (changed) w.features = rows;
+  return changed;
+}
+
 function internalBanners(o) {
   const s = o.success;
   if (!s || !s.banners || typeof s.banners !== "object") return false;
@@ -161,6 +183,7 @@ const ROUTES = [
   [/\/api\/\d+\/card\/items\/\d+(\?|$)/, card],
   [/\/api\/\d+\/internalBannerRotation\/banners(\?|$)/, internalBanners],
   [/\/api\/\d+\/serp\/profile\/items\/banner(\?|$)/, profileItemsBanner],
+  [/\/api\/\d+\/profile\/finance(\?|$)/, profileFinance],
 ];
 
 (function main() {

@@ -58,7 +58,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 
 | App | Last tested on | Written | Status |
 |---|---|---|---|
-| Avito | 230.1 | from scratch (not a fork) | working |
+| Avito | 230.1 (capture, November 2026) | from scratch (not a fork) | working |
 | MegaFon | 4.66.1, web app v2.158.1 (capture, October 2026) | from scratch | working, see [known risks](#megafon-known-risks--to-verify-on-device) |
 | Ozon Bank | — | from scratch | working |
 | Ozon Marketplace | build 1050 (capture, November 2026) | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
@@ -192,6 +192,7 @@ Rules and rewrites apply globally whenever a module is enabled, not only to its 
 | `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |  |
 | `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |  |
 | `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
+| `crashlyticsreports-pa.googleapis.com` (Crashlytics crash reports, any app) | `DOMAIN` REJECT | | | |  |
 | `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
 | `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |  |
 | `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `log.strm.yandex.ru` | | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
@@ -226,7 +227,7 @@ Files:
 
 ### Avito app facts
 
-From a capture of Avito iOS 230.1:
+From captures of Avito iOS 230.1 (first one, then a re-check on 2026-11-17, below):
 - Bundle / X-App-Id: `online.anero.app`; deep-link scheme `online.anero.app://`
 - API host `app.avito.ru`, web/pixel host `www.avito.ru`; no cert pinning on either (MITM works)
 - Responses are zstd (`Accept-Encoding: zstd;q=1.0, br, gzip`). ProxyPin stores bodies still zstd-compressed
@@ -241,6 +242,15 @@ Feeds carry placeholder entries (`banner` with a list of `yandex` + `avito` sour
 
 Banner codes seen: `promo_root_poster_ios` (home), `serp_4/10/17/24/30_ios` (search), `fav_mid_ios` (favorites), `item_btf_ios` (item card).
 
+Re-checked 2026-11-17 (still 230.1; home, search with pagination, favorites, three item cards, profile,
+My listings, finance). Same placeholders and banner codes; 35 ad-server requests in the capture
+(taken without the module) all came from placeholders the script already drops. Creatives now carry
+ORD fields (`erid`, `externalLegalInfo`, `legalInfo`, `disclaimer`) and include microloan ads.
+Search adds a Black Friday `actionPromoBanner` (`search_banner_bf_*` image), dropped as before. With
+the script applied: no `banner`/`actionPromoBanner`/`searchPromoHeaderWidget` entries, no buzzoola
+or Yandex ad links left in feed, search or favorites; every listing kept (34 per search page, 30 in
+the feed, 20 favorites).
+
 ### Avito endpoint map
 
 | Endpoint | Ad content | Handling |
@@ -252,6 +262,7 @@ Banner codes seen: `promo_root_poster_ios` (home), `serp_4/10/17/24/30_ios` (sea
 | `/api/N/items/<id>/banners` | `success.positions.item_btf_ios` | script empties `positions` |
 | `/api/N/internalBannerRotation/banners` | `success.banners` | script empties |
 | `/api/N/serp/profile/items/banner` | My listings upsell ("discount on promotion", review nag) | script deletes `result.banner` |
+| `/api/N/profile/finance` | Profile "Финансы" widget: `success.widget.features` = rows of tiles (`wallet`, `bonuses`, `installmentsPromo` = "Деньги взаймы — и ещё 5 продуктов", loans/credit upsell opening `profile/finance/installments/promo`) | script drops tiles in `FINANCE_DROP_IDS` (`installmentsPromo`) and any row left empty; wallet and bonuses stay. Since November 2026 |
 | `/api/N/adv/network/banner` | ad server | reject-dict |
 | `www.avito.ru/web/N/adv/network/(view\|click)` | pixels | reject-200 |
 
@@ -261,6 +272,13 @@ Banner codes seen: `promo_root_poster_ios` (home), `serp_4/10/17/24/30_ios` (sea
 expects `{"result":true}`), `itemReviews` entries of `type: banner` (info notice, not an ad), `itemsCarouselWidget` in search
 (recommendations), `creditInfo` / `installments` on item card (functional), profile menu rows (`referral`, `promotions`, `rewards`).
 
+Also left alone after the November 2026 re-check: "Чёрная пятница" badges (`badgeBar`) on real
+listings in the feed, search and `widget/itemsCarouselWidget` (seller discounts, not ads); profile tab
+(`profile/tab`) `rewardsEntryPoint` ("Портал призов"), `widgetGroup` `referral`, `specialOffers` and
+`recommendationBlock` ("Может быть интересно": items you viewed); `promoHub` ("Скидки и акции", a seller
+tool to set discounts) in `profile/items/bootstrap`; `sellervation` ("Можно продать") in My listings;
+`main/shortcuts` (category tiles only); `items/<id>/complementary` (similar listings only).
+
 Candidates if more cleanup is wanted on the item card: `fmpOffer`, `fmpCalculator`, `сashLoansCalculator` (first letter is Cyrillic С),
 `autoCredit`, `avitoForBusiness`, `item_tires_banner_*`, `pets_insurance_item_block_*` — add to `CARD_HIDE_IDS` / prefixes.
 
@@ -269,14 +287,15 @@ Candidates if more cleanup is wanted on the item card: `fmpOffer`, `fmpCalculato
 | Kind | Hosts |
 |---|---|
 | Ad-tech | exchange.buzzoola.com, ad/ev.adriver.ru, wcm.weborama-tech.ru, amc.yandex.ru, yandex.ru/ads/* (not MITM'd by this module — would need yandex.ru in MITM) |
-| Telemetry | sentry-mobile.avito.ru, *.tracker-api.vk-analytics.ru (MyTracker), analytics.adjust.com/.io, report.appmetrica.yandex.net, firebaselogging-pa.googleapis.com, app-analytics-services.com, public-api.uxfeedback.ru (in-app surveys) |
+| Telemetry | sentry-mobile.avito.ru, *.tracker-api.vk-analytics.ru (MyTracker), analytics.adjust.com/.io, report.appmetrica.yandex.net, firebaselogging-pa.googleapis.com, crashlyticsreports-pa.googleapis.com (Firebase Crashlytics, rule added November 2026), app-analytics-services.com, public-api.uxfeedback.ru (in-app surveys) |
 | Left alone | startup.mobile.yandex.net (AppMetrica config, other Yandex apps depend on it) |
-| Ad creatives | kinescopecdn.net video (generic video CDN — not blocked) |
+| Ad creatives | kinescopecdn.net / kinescope.io video (generic video CDN, also listing videos in search — not blocked) |
 
 ### Avito known risks / to verify on device
 
 - Home feed pagination: next page uses `offset` + `showedPageCount`; if the client derives offset from item count, dropping entries could cause an occasional duplicate item.
 - `searchPromoHeaderWidget` also carries `toolbarConfig` (dark toolbar theme); removing it should fall back to the default toolbar.
+- Profile finance widget: with `installmentsPromo` gone, the `bonuses` tile is alone in its row (it shared the row with the loan tile). Check on device that it still lays out well.
 
 ---
 
