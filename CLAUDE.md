@@ -12,16 +12,16 @@ one top-level section per app.
 
 ## Contents
 
-| Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) | [Yandex Eats](#yandex-eats) |
-|---|---|---|---|---|---|---|
-| [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) | [App facts](#eats-app-facts) |
-| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) | [What it removes](#eats-what-it-removes) |
-| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) | [Module settings](#eats-module-settings) |
-| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) | [Endpoint map](#eats-endpoint-map) |
-| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) · [Hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) | [Deliberately not touched](#eats-deliberately-not-touched) |
-| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) | [Open items](#eats-open-items) |
-| [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) | [Testing](#eats-testing) · [Privacy](#eats-privacy) |
-| | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |  |
+| Shared | [Avito](#avito) | [MegaFon](#megafon) | [Ozon](#ozon) | [Yandex Maps](#yandex-maps) | [Yandex Go](#yandex-go) | [Yandex Eats](#yandex-eats) | [Yandex Market](#yandex-market) |
+|---|---|---|---|---|---|---|---|
+| [Git](#git) | [App facts](#avito-app-facts) | [App facts](#megafon-app-facts) | [Bank: how the main screen is delivered](#ozon-bank-how-the-app-delivers-the-main-screen) | [Target](#maps-target) | [Install](#go-install) | [App facts](#eats-app-facts) | [App facts](#market-app-facts) |
+| [Privacy rules](#privacy-rules) | [Ad pipeline](#avito-ad-pipeline) | [The appConfig switchboard](#megafon-the-appconfig-switchboard) | [Bank: what is removed](#ozon-bank-what-is-removed-and-how) · [Bank settings](#ozon-bank-module-settings) | [How the app talks to the server](#maps-how-the-app-talks-to-the-server) | [What it removes](#go-what-it-removes) | [What it removes](#eats-what-it-removes) | [What it removes](#market-what-it-removes) |
+| [Modules at a glance](#modules-at-a-glance) | [Endpoint map](#avito-endpoint-map) | [Endpoint map](#megafon-endpoint-map) | [Bank debug workflow](#ozon-bank-debug-workflow) | [Caching](#maps-caching) | [Files and combining with Maps](#go-files-and-combining-with-maps) | [Module settings](#eats-module-settings) | [Module settings](#market-module-settings) |
+| [Repository layout](#repository-layout) | [Deliberately not touched](#avito-deliberately-not-touched) | [Main screen and bottom menu](#megafon-main-screen-and-bottom-menu) · [Module settings](#megafon-module-settings) | [Marketplace](#ozon-marketplace) | [Response types](#maps-response-types-what-each-empty-does) | [Principles](#go-principles) | [Endpoint map](#eats-endpoint-map) | [Endpoint map](#market-endpoint-map) |
+| [Shadowrocket reference](#shadowrocket-reference) | [Third-party hosts](#avito-third-party-hosts-seen) | [Deliberately not touched](#megafon-deliberately-not-touched) | [Script conventions](#ozon-script-conventions) · [Hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted) | [MapKit config](#maps-mapkit-config-the-main-ui-switchboard) | [Endpoint map](#go-endpoint-map) | [Deliberately not touched](#eats-deliberately-not-touched) | [Deliberately not touched](#market-deliberately-not-touched) |
+| [Cross-module overlaps](#cross-module-overlaps) | [Known risks](#avito-known-risks--to-verify-on-device) | [Third-party hosts](#megafon-third-party-hosts-seen) | [Why rules were not enough](#ozon-why-rules-were-not-enough) | [Endpoint map](#maps-endpoint-map) | [Experiments flipped](#go-experiments-flipped) | [Open items](#eats-open-items) | [Open items](#market-open-items) |
+| [README](README.md) | | [Known risks](#megafon-known-risks--to-verify-on-device) | [Testing](#ozon-testing) · [Privacy](#ozon-privacy-rules) | [Open issues](#maps-open-issues) | [Open items](#go-open-items) | [Testing](#eats-testing) · [Privacy](#eats-privacy) | [Testing](#market-testing) · [Privacy](#market-privacy) |
+| | | [Testing](#megafon-testing) · [Privacy](#megafon-privacy) | [When a block comes back](#ozon-when-a-block-comes-back) | [Debugging workflow](#maps-debugging-workflow) | [Location-permission bar](#go-location-permission-bar-experimental-fix) |  |  |
 
 ---
 
@@ -54,6 +54,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon MITM exclusions | — | [`Ozon/ozon-mitm-exclude.sgmodule`](Ozon/ozon-mitm-exclude.sgmodule) | none | none | excludes `api.finance.ozon.ru`, `check.bank.ozon.ru` from decryption |
 | Yandex Maps | `ru.yandex.traffic` | [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule) | [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js) | `yandex-maps` (binary), `yandex-maps-json` | `proxy.mob.maps.yandex.net`, `geointernal.mob.maps.yandex.net`, `avatars.mds.yandex.net`, `yandex.ru`, `egw.home-gateway.plus.yandex.net`, `app.tanker.yandex.net`, `mobile-maps-common.s3.yandex.net` |
 | Yandex Eats | `ru.foodfox.client` | [`Yandex/yandex-eats.sgmodule`](Yandex/yandex-eats.sgmodule) | [`Yandex/Script/yandex-eats.js`](Yandex/Script/yandex-eats.js) | `yandexeats` | `eda.yandex.ru` |
+| Yandex Market | — (user agent `Beru/<version>`) | [`Yandex/yandex-market.sgmodule`](Yandex/yandex-market.sgmodule) | [`Yandex/Script/yandex-market.js`](Yandex/Script/yandex-market.js) | `yandexmarket` | `mapi.market.yandex.net` |
 | Yandex Go | — | [`Yandex/yandex-go.sgmodule`](Yandex/yandex-go.sgmodule) | [`Yandex/Script/yandex-go.js`](Yandex/Script/yandex-go.js) | `yandexgo-*` (12 entries) | `tc.mobile.yandex.net`, `tc.eats.yandex.ru`, `go.integration.market.yandex.ru`, `yandex.ru` (`app.lavka.yandex.net` deliberately left out: Lavka answers with a captcha when Shadowrocket MITMs it, so Lavka is [not handled](#go-applavkayandexnet-lavka-web-app)) |
 
 | App | Last tested on | Written | Status |
@@ -65,6 +66,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon MITM exclusions | — | from scratch | working |
 | Yandex Maps | 31.1.5 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Eats | 26.43.0 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#eats-open-items) |
+| Yandex Market | 2026.46.2 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#market-open-items) |
 | Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
 
 ## Repository layout
@@ -87,9 +89,11 @@ Ozon/Script/ozon-marketplace.js    Ozon Marketplace script
 Yandex/yandex-maps.sgmodule        Yandex Maps module
 Yandex/yandex-go.sgmodule          Yandex Go module
 Yandex/yandex-eats.sgmodule        Yandex Eats module (settings in #!arguments)
+Yandex/yandex-market.sgmodule      Yandex Market module (settings in #!arguments)
 Yandex/Script/yandex-maps.js       Yandex Maps script (protobuf + JSON)
 Yandex/Script/yandex-go.js         Yandex Go script
 Yandex/Script/yandex-eats.js       Yandex Eats script
+Yandex/Script/yandex-market.js     Yandex Market script
 Dixy/Script/                       Dixy (no module yet; .gitkeep only)
 ```
 
@@ -184,24 +188,29 @@ Facts that apply to every module.
 
 Rules and rewrites apply globally whenever a module is enabled, not only to its app.
 
-| Item | Avito | MegaFon | Yandex Maps | Yandex Go | Yandex Eats |
-|---|---|---|---|---|---|
-| `amc.yandex.ru` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |  |
-| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | | `DOMAIN` REJECT |
-| `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |  |
-| `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |  |
-| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |  |
-| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
-| `crashlyticsreports-pa.googleapis.com` (Crashlytics crash reports, any app) | `DOMAIN` REJECT | | | |  |
-| `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
-| `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |  |
-| `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `log.strm.yandex.ru` | | | | `DOMAIN` REJECT | `DOMAIN` REJECT |
-| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes | no |
-| `yandex.ru/an/` | | | `reject-200` | `reject` |  |
-| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/click` → `reject`; `clck/redir` (real link redirects) and `clck/jclck` (used by Market search) deliberately left alone |  |
+| Item | Avito | MegaFon | Yandex Maps | Yandex Go | Yandex Eats | Yandex Market |
+|---|---|---|---|---|---|---|
+| `amc.yandex.ru` | `DOMAIN` REJECT | | | `DOMAIN` REJECT |  |  |
+| `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | | `DOMAIN` REJECT |  |
+| `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |  |  |
+| `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |  |  |
+| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |  |  |
+| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
+| `crashlyticsreports-pa.googleapis.com` (Crashlytics crash reports, any app) | `DOMAIN` REJECT | | | |  |  |
+| `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT | `DOMAIN` REJECT |  |
+| `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |  |  |
+| `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `log.strm.yandex.ru` | | | | `DOMAIN` REJECT | `DOMAIN` REJECT | `DOMAIN` REJECT |
+| `ingest.monium.yandex`, `icmp0.ru` | | | | `DOMAIN` REJECT | | `DOMAIN` REJECT |
+| `baobab.market.yandex.ru` (Market event logging; Go blocks `market-baobab.yandex.ru`) | | | | | | `DOMAIN` REJECT |
+| `yandex.ru` in MITM | no (so `yandex.ru/ads/*` is not rewritten by Avito) | | yes | yes | no | no |
+| `yandex.ru/an/` | | | `reject-200` | `reject` |  |  |
+| `yandex.ru/clck/` | | | all of `clck/` → `reject-200` | only `clck/click` → `reject`; `clck/redir` (real link redirects) and `clck/jclck` (used by Market search) deliberately left alone |  |  |
 
 With Maps enabled, its broader `yandex.ru/clck/` rule also catches `clck/redir` and `clck/jclck`,
 which Go deliberately keeps working (`jclck` since November 2026, for Market search). Duplicate REJECT rules are harmless.
+
+The Yandex Market app (`mapi.market.yandex.net`) and Yandex Go's Market web view
+(`go.integration.market.yandex.ru`) are separate front ends with separate hosts; both modules can be on together.
 
 Yandex Eats (`eda.yandex.ru`) and Yandex Go's Eats screen (`tc.eats.yandex.ru`) share a backend and
 match different hosts, so both modules can be on together without two scripts matching one URL.
@@ -1359,3 +1368,128 @@ untouched; empty, non-JSON, `null` and wrong-shape bodies passed through; synthe
 Captures of this app contain the delivery address with entrance, floor, apartment and intercom code, exact
 coordinates, name, passport uid, eater uuid, device id, order numbers and carts, session ids and cookies.
 Never commit captures or anything copied from them; keep examples synthetic.
+
+---
+
+## Yandex Market
+
+Shadowrocket module that strips ads and promo from the native Yandex Market iOS app («Яндекс Маркет»,
+user agent `Beru/<version>`). Written from scratch, from a ProxyPin capture of app 2026.46.2 (November 2026:
+main screen with feed pages, search, a Lavka shop-in-shop search, product card templates, cart, favourites,
+profile, order details, video viewer). Every content switch is a module argument.
+Not the same front end as Yandex Go's Market web view (see [Go](#go-gointegrationmarketyandexru-market-web-view-inside-go)).
+
+Files:
+- [`Yandex/yandex-market.sgmodule`](Yandex/yandex-market.sgmodule) — `#!arguments`, tracker rules, `Accept-Encoding` rewrite, one script entry (`yandexmarket`), MITM host
+- [`Yandex/Script/yandex-market.js`](Yandex/Script/yandex-market.js) — single http-response script, routed by path; every handler fails open. Exports `handleScreen`, `handleMediaAdvSdk`, `handleMarketPopup` when `module` exists (Node tests)
+
+### Market app facts
+
+- API host `mapi.market.yandex.net`. Screens: `POST /api/screen/<name>?` (`main`, `search-result`, `cart`,
+  `favourites`, `profile`, `order/details`, `product/templates`, `sins-media-viewer`, …); actions:
+  `POST /api/action/<name>` (`{action, shared}`); config: `POST /api/launch` (feature flags, `rearr` experiments).
+- Same server-driven envelope as Yandex Go: `{ui: {sections: [...]}, scaffold, shared, actions, context}`.
+  A section is `{id, origType, content: [{id, type, divDataSharedId, actions}]}`; the DivKit block it renders
+  is `shared.divData[divDataSharedId]` (`{log_id, states: [{state_id, div}], timers, variables, variable_triggers}`).
+  Item actions are often `DeferredDecodingAction` with the real action list as a JSON string in `actionRaw`.
+- The main-screen feed is `FeedboxSectionID` (`TabbedFeedboxSection`): `tabsContent[].snippets[]`, each
+  `{type: divkit, snippet: {id, divDataSharedId, actions}}`. Next pages come from the same `screen/main`
+  endpoint and carry only the feed. The feed under an empty cart has the same snippets in `content[]`.
+- Responses are `Cache-Control: no-store`; the app asks for `gzip, deflate, br`, and the module forces gzip
+  on scripted endpoints.
+- No certificate pinning seen on `mapi.market.yandex.net` (the ProxyPin capture decrypted it, login included).
+
+### Market: what it removes
+
+| Block | Where | Handling | Setting |
+|---|---|---|---|
+| Hero ad carousel on the main screen («РЕКЛАМА», advertiser creatives, Direct ads, `yandex.ru/an/rtbcount` pixels) | section `HeroCarouselRenderData…`, item type `MediaAdvHeroCarousel` | DivKit block emptied, item actions dropped | `ad_banners` |
+| Ad banners in the feed (3 per page, «Реклама», "why this ad" kebab) | feed snippets `feedbox-media-adv-banner-<uuid>` | snippet removed, its `shared.divData` entry deleted | `ad_banners` |
+| Ad hero on the empty-search screen | `UrbanAdsPreloadAction` (`format: hero`, `page: NullSuggest`, path `api/media-adv/sdk`) inside search-bar and scaffold actions, often in `actionRaw` strings | action removed (strings re-serialised); `api/media-adv/sdk` itself: every section neutered (not seen in the capture) | `ad_banners` |
+| Ad-network impression pixels the main screen fires for the hero carousel | `actions.onApply` one-time `AdvertisementPixelBillingAction` to `yandex.ru/an/…` | replaced by an empty `ListAction` (pixels to other hosts are left to the rules) | `ad_banners` |
+| Ad pop-up | `api/action/media-adv/market_popup` (listed in `launch`, not called in the capture) | `action` → empty `ListAction` | `ad_popups` |
+| Promo strip on the main screen: "GTA 6 уже на Маркете", PlayStation 5 Pro draw, "Монетки за просмотр", live stream, "Товар за 1 ₽" with Plus for 1 ₽, "Айфоны каждый день", "Колесо призов" | `PromoHeaderRedesignSectionRenderData` | neutered | `promo_header` |
+| Profile: Pay card, credit ("До 997 000 ₽ на любые цели"), Pay plastic card, Split offers | `FintechSectionRenderData` (`ProfileSplitBalanceAndPayCardSection`) | neutered | `fintech` |
+| Profile: "Рекомендуйте за награду" | `ProfileReferralPaymentSectionRenderData` | neutered | `referral` |
+| Profile "Получите N за отзыв"; feed "Как вам товар?" rating card | `ProfilePersMasterAgitationSectionRenderData`; feed snippet `agitation_id_<uuid>` | neutered; snippet removed | `review_nags` |
+| Trackers | rules: `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru` (ad and billing pixels), `baobab.market.yandex.ru` (`safeclick/json` event logging, ~200 POSTs per session, answers a fixed 62-byte body), `ingest.monium.yandex`, `log.strm.yandex.ru`, `analytics.adjust.com`, `icmp0.ru` | always on | — |
+
+A neutered section keeps its item (id, type, layout) and its `divDataSharedId`; the shared block is replaced by
+an empty container (`log_id` kept) and the item's `actions` by `{}`, so nothing renders and no pixel fires. This is
+how Go handles urban ads (see [Go](#go-tcmobileyandexnet-main-app-backend)).
+
+### Market module settings
+
+```
+argument=ad_banners:{{{ad_banners}}}&ad_popups:{{{ad_popups}}}&promo_header:{{{promo_header}}}&fintech:{{{fintech}}}&referral:{{{referral}}}&review_nags:{{{review_nags}}}&extra:{{{extra}}}
+```
+
+| Setting | Default | Effect when `true` |
+|---|---|---|
+| `ad_banners` | `true` | hero ad carousel, feed ad banners, empty-search ad hero, ad-network pixels, `api/media-adv/sdk` |
+| `ad_popups` | `true` | `api/action/media-adv/market_popup` |
+| `promo_header` | `true` | main-screen promo strip |
+| `fintech` | `true` | profile Pay / credit / Split offers |
+| `referral` | `true` | profile referral block |
+| `review_nags` | `true` | profile review reward block, feed rating cards |
+| `extra` | `Add_components_here` (placeholder, hides nothing) | extra section `origType`s or section ids to neuter, `+` or spaces, never commas. Never add `TabbedFeedboxSection`, `SearchResultSectionRenderData`, `FeedboxSection` (real products) |
+
+A switch is off only when its value is `false`, `0`, `no` or `off`, in any case. A missing key, an
+unsubstituted placeholder or a cut argument counts as on. A JSON object is also accepted.
+
+### Market endpoint map
+
+All on `https://mapi.market.yandex.net`.
+
+| Endpoint | What it delivers | Handling |
+|---|---|---|
+| `POST /api/screen/*` | every screen and feed page | script `handleScreen` (skips `screen/media-adv/*`, the "hide this ad" feedback screen) |
+| `POST /api/media-adv/sdk` | urban-ads unit for the empty-search hero (preloaded, not fetched in the capture) | script `handleMediaAdvSdk` |
+| `POST /api/action/media-adv/market_popup` | ad pop-up action (listed in `launch` only) | script `handleMarketPopup` |
+| `POST /api/action/fomo/business/overlay` | hides a "business FOMO" overlay (`HideOverlayAction`) | not touched |
+| `POST /api/launch` | flags, experiments (`market_madv_*`, `mblender_denormalize_advert_incut`, …) | not touched |
+| `POST /api/action/*` (`cartState`, `deeplink`, `set-lavka-warehouse-type`, `profile-preview`, `pushActivityToken`) | functional | not touched |
+
+### Market deliberately not touched
+
+- Sponsored products: about half of the main-feed products carry `sponsored: true` in their navigation
+  params, but no ad label is drawn and they are real listings (paid ranking). The search pages in the capture
+  had none. `isMadvProduct` was false everywhere.
+- Department links (`HotlinksSectionRenderData`), order widgets (`ActionsScrollboxRenderData`), the profile
+  menu (its "Колесо призов", "Промокоды и акции" rows), Plus balance in the profile header, the feed tab bar.
+- Lavka shop-in-shop pages inside search (`ShopInShopTopInsetRenderData` and the store blocks): store navigation.
+- `AdvertisementPixelBillingAction` to `em.market.ya.ru` on ordinary products: it rides on every product tap;
+  the host rule blocks the request instead.
+- `yandex.ru/clck/click` (~35 per session) and the remaining `yandex.ru/an/` requests need `yandex.ru` in MITM;
+  left to the Go and Maps modules.
+- `surveys.yandex.ru` (in-app survey config), `api.browser.yandex.ru/uma_proto`, messenger and Plus hosts,
+  `avatars.mds.yandex.net/get-market-adv/` and `/get-direct/` (ad images; no longer requested once the
+  banners are gone).
+
+### Market open items
+
+- Not yet confirmed on device: whether `mapi.market.yandex.net` passes Shadowrocket's own certificate check
+  when decrypted (see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)); whether neutered
+  sections leave a gap.
+- Not captured: a product card (only `product/templates`), catalogue pages, search with ad incuts (the
+  `launch` experiments mention advert and suggest incuts), the empty-search screen, a filled
+  `api/media-adv/sdk` or `market_popup` reply, the prize wheel and live-stream screens.
+
+### Market testing
+
+Throwaway Node harness in the scratchpad (never in the repo): reads the module, fills the `#!arguments`
+defaults into `argument=`, checks the script line splits cleanly on commas and that the header rewrite uses
+the script's pattern, runs the script on every captured response the pattern matches and lists every JSON
+path it changed. On the 2026.46.2 capture: 25 responses matched, 11 edited; on the main screen and its feed
+page only the hero and promo blocks, the feed ad banners and rating card, their actions, the urban-ads
+preloads and two `onApply` pixels changed; «Реклама» 16 → 1 (the unused "Реклама скрыта" template),
+`an/rtbcount` 14 → 0, every product kept (32/32, 30/30; search 72/72, favourites 28/28); every rewritten
+`actionRaw` still parses; with every switch off, nothing changes; empty, non-JSON, `null` and wrong-shape
+bodies passed through; synthetic `media-adv/sdk` and `market_popup` bodies edited as described.
+
+### Market privacy
+
+Captures of this app contain the account (passport tokens in `mobileproxy.passport.yandex.net` replies),
+pick-up point and delivery address, order numbers, cart contents, Plus and wallet state, device ids and
+cookies; the same capture also had the phone's unrelated Exchange mail traffic. Never commit captures or
+anything copied from them; keep examples synthetic.

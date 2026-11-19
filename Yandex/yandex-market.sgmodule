@@ -1,0 +1,29 @@
+#!name=[AdBlock] Yandex Market
+#!desc=Removes ad banners, the promo strip, ad pop-ups, fintech and referral upsells, review nags and ad trackers from the Yandex Market app
+#!category=AdBlock
+#!homepage=https://github.com/b333b/adblocking-modules
+#!date=2026-11-19 20:45 MSK
+#!arguments=ad_banners:true,ad_popups:true,promo_header:true,fintech:true,referral:true,review_nags:true,extra:Add_components_here
+#!arguments-desc=Each setting is true or false, except extra.\n\nad_banners — hero ad carousel on the main screen, "Реклама" banners in the feed, ad hero on the search screen\nad_popups — ad pop-ups\npromo_header — Market's promo strip on the main screen (prize draws, coins for watching, live stream, 1 ₽ offers, prize wheel)\nfintech — Pay card, credit and Split offers in the profile\nreferral — "Рекомендуйте за награду" in the profile\nreview_nags — "Получите N за отзыв" in the profile, "Как вам товар?" cards in the feed\nextra — extra section types (origType) or section ids to hide, separated by + or spaces, never commas\n\nSections seen that are kept by default:\nHotlinksSectionRenderData — department links (Доставка, Ultima, Спешл, Еда, Обзоры)\nActionsScrollboxRenderData — order widgets (delivery status, pick-up QR code)\nMenuSectionRenderData — profile menu (incl. "Колесо призов" and "Промокоды и акции" rows)\n\nSponsored products in the feed carry no ad label and are kept.
+
+[Rule]
+# Ad impression / click pixels
+DOMAIN,media-adv.market.yandex.ru,REJECT
+DOMAIN,em.market.ya.ru,REJECT
+DOMAIN,em.market.yandex.ru,REJECT
+# Market event logging (~200 POSTs per session), OpenTelemetry metrics, video player logs, Adjust
+DOMAIN,baobab.market.yandex.ru,REJECT
+DOMAIN,ingest.monium.yandex,REJECT
+DOMAIN,log.strm.yandex.ru,REJECT
+DOMAIN,analytics.adjust.com,REJECT
+DOMAIN,icmp0.ru,REJECT
+
+[Header Rewrite]
+# The app asks for br first; force gzip on scripted endpoints so the body is decodable
+^https:\/\/mapi\.market\.yandex\.net\/api\/(screen\/|media-adv\/sdk|action\/media-adv\/market_popup) header-replace Accept-Encoding gzip
+
+[Script]
+yandexmarket = type=http-response,pattern=^https:\/\/mapi\.market\.yandex\.net\/api\/(screen\/|media-adv\/sdk|action\/media-adv\/market_popup),requires-body=1,max-size=-1,timeout=30,argument=ad_banners:{{{ad_banners}}}&ad_popups:{{{ad_popups}}}&promo_header:{{{promo_header}}}&fintech:{{{fintech}}}&referral:{{{referral}}}&review_nags:{{{review_nags}}}&extra:{{{extra}}},script-path=https://raw.githubusercontent.com/b333b/adblocking-modules/main/Yandex/Script/yandex-market.js
+
+[MITM]
+hostname = %APPEND% mapi.market.yandex.net
