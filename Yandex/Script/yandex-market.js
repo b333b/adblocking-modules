@@ -1,4 +1,4 @@
-// Last edited: 2026-11-20 17:27 MSK
+// Last edited: 2026-11-20 17:45 MSK
 /*
  * Yandex Market iOS app ("Beru"): ads and promo cleaner (Shadowrocket http-response script)
  *
@@ -6,15 +6,18 @@
  *   { ui: { sections: [ {id, origType, content: [ {id, type, divDataSharedId, actions} ],
  *                        tabsContent: [ {tabId, snippets: [ {type, snippet: {...}} ]} ] } ] },
  *     shared: { divData: { <id>: {log_id, states: [{state_id, div}]} }, sections, ... }, actions, ... }
- * Each section item points at its DivKit block in shared.divData. An unwanted section keeps
- * its place (other actions and triggers refer to it by id) but loses its items and their
- * DivKit blocks, so there is nothing left to draw and no ad pixel fires; unwanted feed
- * snippets are removed from their list the same way. (Until 2026-11-20 the items were kept
- * with an empty DivKit block instead; on device the hero carousel still showed.)
+ * Each section item points at its DivKit block in shared.divData. Three ways to hide things:
+ *  - ad sections (the hero carousel): removed from the screen entirely, with their
+ *    shared.sections / sectionLabels entries and DivKit blocks. The server itself sends main
+ *    screens without a hero section, so the app accepts that shape;
+ *  - other unwanted sections (promo strip, profile blocks): neutered: the item stays, its
+ *    DivKit block becomes an empty container and its actions are dropped;
+ *  - feed snippets: removed from their list, with their DivKit blocks.
+ * Never leave a section with an empty item list: the app did not start with that (2026-11-20).
  *
  * Routes (host mapi.market.yandex.net):
  *   /api/screen/*                       every screen (main, feed pages, cart, profile, ...)
- *   /api/media-adv/sdk                  urban-ads banner unit (search hero), every section emptied
+ *   /api/media-adv/sdk                  urban-ads banner unit (search hero), every section neutered
  *   /api/action/media-adv/market_popup  ad pop-up action, replaced by an empty action
  *
  * Every handler fails open: unexpected shape → original body ($done({})).
@@ -44,7 +47,7 @@ const on = (k) => (S ? !off(S[k]) : true);
 const AD_BANNERS = on("ad_banners");
 const AD_POPUPS = on("ad_popups");
 
-// Sections emptied whole, by origType (or, for the extra setting, also by section id).
+// Sections neutered whole, by origType (or, for the extra setting, also by section id).
 const SECTIONS_BY_SETTING = {
   promo_header: ["PromoHeaderRedesignSectionRenderData"],     // promo strip: prize draws, "coins for watching", live stream, 1 ₽ Plus offer, prize wheel
   fintech: ["FintechSectionRenderData"],                       // profile: Pay card, credit "до 997 000 ₽", Split and Plus offers
@@ -91,15 +94,34 @@ function divDataOf(body) {
   return body && isObj(body.shared) && isObj(body.shared.divData) ? body.shared.divData : null;
 }
 
-// Empty a section: drop its items and their shared DivKit blocks. The section itself stays,
-// so shared.sections, sectionLabels and triggers that update it by id still find it.
-function emptySection(s, body) {
+function emptyDiv() {
+  return { type: "container", orientation: "vertical", height: { type: "wrap_content", min_size: { unit: "px", value: 1 } }, items: [] };
+}
+
+// Keep the item (id/type/layout) but render nothing and fire nothing.
+function neuterItem(c, body) {
+  if (!isObj(c)) return;
+  c.actions = {};
   const dd = divDataOf(body);
-  for (const c of s.content) {
-    const key = isObj(c) ? c.divDataSharedId : null;
-    if (dd && key != null) delete dd[key];
+  const key = c.divDataSharedId;
+  const empty = (old) => ({ log_id: (old && old.log_id) || c.id || "empty", states: [{ state_id: 0, div: emptyDiv() }] });
+  if (key != null && dd && dd[key]) dd[key] = empty(dd[key]);
+  else c.divData = empty(c.divData);
+}
+
+// Forget a removed section everywhere the shared part of the document lists it.
+function forgetSection(s, body) {
+  const sh = body && isObj(body.shared) ? body.shared : null;
+  if (!sh) return;
+  const dd = divDataOf(body);
+  if (dd && Array.isArray(s.content)) {
+    for (const c of s.content) {
+      const key = isObj(c) ? c.divDataSharedId : null;
+      if (key != null) delete dd[key];
+    }
   }
-  s.content = [];
+  if (isObj(sh.sections)) delete sh.sections[s.id];
+  if (isObj(sh.sectionLabels)) delete sh.sectionLabels[s.id];
 }
 
 // Drop actions of the given types from every action list, including lists encoded as JSON
@@ -180,12 +202,18 @@ function handleScreen(body) {
   const sections = body && isObj(body.ui) && body.ui.sections;
   if (!Array.isArray(sections)) return false;
   let changed = false;
-  for (const s of sections) {
+  // Ad sections leave the screen entirely, unless that would leave it with no sections.
+  const adSections = AD_BANNERS ? sections.filter((s) => isObj(s) && s.id != null && sectionIsAd(s)) : [];
+  if (adSections.length && adSections.length < sections.length) {
+    adSections.forEach((s) => forgetSection(s, body));
+    body.ui.sections = sections.filter((s) => adSections.indexOf(s) < 0);
+    changed = true;
+  }
+  for (const s of body.ui.sections) {
     if (!isObj(s)) continue;
-    const unwanted = (AD_BANNERS && sectionIsAd(s)) ||
-      NEUTER_SECTIONS.has(String(s.origType || "")) || NEUTER_SECTIONS.has(String(s.id || ""));
-    if (unwanted && Array.isArray(s.content) && s.content.length) {
-      emptySection(s, body);
+    const neuter = NEUTER_SECTIONS.has(String(s.origType || "")) || NEUTER_SECTIONS.has(String(s.id || ""));
+    if (neuter && Array.isArray(s.content) && s.content.length) {
+      s.content.forEach((c) => neuterItem(c, body));
       changed = true;
       continue;
     }
@@ -206,7 +234,7 @@ function handleScreen(body) {
   return changed;
 }
 
-// Urban-ads unit (seen only as a preload target in this capture): empty whatever sections it has.
+// Urban-ads unit (seen only as a preload target in the captures): neuter whatever sections it has.
 function handleMediaAdvSdk(body) {
   if (!AD_BANNERS) return false;
   const sections = body && isObj(body.ui) && body.ui.sections;
@@ -214,7 +242,7 @@ function handleMediaAdvSdk(body) {
   let changed = false;
   for (const s of sections) {
     if (isObj(s) && Array.isArray(s.content) && s.content.length) {
-      emptySection(s, body);
+      s.content.forEach((c) => neuterItem(c, body));
       changed = true;
     }
   }
