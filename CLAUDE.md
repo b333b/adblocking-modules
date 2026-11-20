@@ -66,7 +66,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon MITM exclusions | — | from scratch | working |
 | Yandex Maps | 31.1.5 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Eats | 26.43.0 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#eats-open-items) |
-| Yandex Market | 2026.46.2 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#market-open-items) |
+| Yandex Market | 2026.46.2 (captures, November 2026) | from scratch | new; first version left the hero carousel on device, fixed 2026-11-20, see [open items](#market-open-items) |
 | Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
 
 ## Repository layout
@@ -1403,20 +1403,28 @@ Files:
 
 | Block | Where | Handling | Setting |
 |---|---|---|---|
-| Hero ad carousel on the main screen («РЕКЛАМА», advertiser creatives, Direct ads, `yandex.ru/an/rtbcount` pixels) | section `HeroCarouselRenderData…`, item type `MediaAdvHeroCarousel` | DivKit block emptied, item actions dropped | `ad_banners` |
-| Ad banners in the feed (3 per page, «Реклама», "why this ad" kebab) | feed snippets `feedbox-media-adv-banner-<uuid>` | snippet removed, its `shared.divData` entry deleted | `ad_banners` |
-| Ad hero on the empty-search screen | `UrbanAdsPreloadAction` (`format: hero`, `page: NullSuggest`, path `api/media-adv/sdk`) inside search-bar and scaffold actions, often in `actionRaw` strings | action removed (strings re-serialised); `api/media-adv/sdk` itself: every section neutered (not seen in the capture) | `ad_banners` |
+| Hero ad carousel on the main screen («РЕКЛАМА», advertiser creatives, Direct ads, `yandex.ru/an/rtbcount` pixels) | section `HeroCarouselRenderData…`, item type `MediaAdvHeroCarousel` | section emptied (see below) | `ad_banners` |
+| Ad banners in the feed (3 per page, «Реклама», "why this ad" kebab); brand-paid product shelves («РЕКЛАМА», e.g. "Кофемашины Philips", since 2026-11-20) | feed snippets `feedbox-media-adv-banner-<uuid>`, `feedbox-media-adv-shelf-<uuid>`: any id starting `feedbox-media-adv` | snippet removed, its `shared.divData` entry deleted | `ad_banners` |
+| Ad hero on the empty-search screen | `UrbanAdsPreloadAction` (`format: hero`, `page: NullSuggest`, path `api/media-adv/sdk`) inside search-bar and scaffold actions, often in `actionRaw` strings | action removed (strings re-serialised); `api/media-adv/sdk` itself: every section emptied (not seen in the capture) | `ad_banners` |
 | Ad-network impression pixels the main screen fires for the hero carousel | `actions.onApply` one-time `AdvertisementPixelBillingAction` to `yandex.ru/an/…` | replaced by an empty `ListAction` (pixels to other hosts are left to the rules) | `ad_banners` |
 | Ad pop-up | `api/action/media-adv/market_popup` (listed in `launch`, not called in the capture) | `action` → empty `ListAction` | `ad_popups` |
-| Promo strip on the main screen: "GTA 6 уже на Маркете", PlayStation 5 Pro draw, "Монетки за просмотр", live stream, "Товар за 1 ₽" with Plus for 1 ₽, "Айфоны каждый день", "Колесо призов" | `PromoHeaderRedesignSectionRenderData` | neutered | `promo_header` |
-| Profile: Pay card, credit ("До 997 000 ₽ на любые цели"), Pay plastic card, Split offers | `FintechSectionRenderData` (`ProfileSplitBalanceAndPayCardSection`) | neutered | `fintech` |
-| Profile: "Рекомендуйте за награду" | `ProfileReferralPaymentSectionRenderData` | neutered | `referral` |
-| Profile "Получите N за отзыв"; feed "Как вам товар?" rating card | `ProfilePersMasterAgitationSectionRenderData`; feed snippet `agitation_id_<uuid>` | neutered; snippet removed | `review_nags` |
+| Promo strip on the main screen: "GTA 6 уже на Маркете", PlayStation 5 Pro draw, "Монетки за просмотр", live stream, "Товар за 1 ₽" with Plus for 1 ₽, "Айфоны каждый день", "Колесо призов" | `PromoHeaderRedesignSectionRenderData` | emptied | `promo_header` |
+| Profile: Pay card, credit ("До 997 000 ₽ на любые цели"), Pay plastic card, Split offers | `FintechSectionRenderData` (`ProfileSplitBalanceAndPayCardSection`) | emptied | `fintech` |
+| Profile: "Рекомендуйте за награду" | `ProfileReferralPaymentSectionRenderData` | emptied | `referral` |
+| Profile "Получите N за отзыв"; feed "Как вам товар?" rating card | `ProfilePersMasterAgitationSectionRenderData`; feed snippet `agitation_id_<uuid>` | emptied; snippet removed | `review_nags` |
 | Trackers | rules: `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru` (ad and billing pixels), `baobab.market.yandex.ru` (`safeclick/json` event logging, ~200 POSTs per session, answers a fixed 62-byte body), `ingest.monium.yandex`, `log.strm.yandex.ru`, `analytics.adjust.com`, `icmp0.ru` | always on | — |
 
-A neutered section keeps its item (id, type, layout) and its `divDataSharedId`; the shared block is replaced by
-an empty container (`log_id` kept) and the item's `actions` by `{}`, so nothing renders and no pixel fires. This is
-how Go handles urban ads (see [Go](#go-tcmobileyandexnet-main-app-backend)).
+An emptied section stays in `ui.sections` (and in `shared.sections`, `sectionLabels`, and the triggers that update
+it by id, e.g. `referral-header-update` → `UpdateSectionAction` on the promo strip), but its `content` becomes `[]`
+and its items' `shared.divData` blocks are deleted, so there is nothing to draw and no item action (pixels, the
+hero's `REFRESH_BY_STATE_ACTION` → `UpdateSectionAction` with `APPEND_SNIPPETS`) is left. This is how Go empties
+its feed sections.
+
+Until 2026-11-20 these sections were *neutered* instead: the item stayed and its DivKit block was swapped for an
+empty container (`log_id` kept, item `actions` → `{}`), the way Go handles urban ads. On device the hero carousel
+at the top of the main screen still showed (reported 2026-11-20; a new capture had the same section shape, which
+the script had matched), while the feed banners, removed from their list, were gone. The cause is not known (most
+likely the app keeps or re-renders an item it still finds by id); removing the items avoids it.
 
 ### Market module settings
 
@@ -1468,9 +1476,8 @@ All on `https://mapi.market.yandex.net`.
 
 ### Market open items
 
-- Not yet confirmed on device: whether `mapi.market.yandex.net` passes Shadowrocket's own certificate check
-  when decrypted (see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)); whether neutered
-  sections leave a gap.
+- On device (2026-11-20): the app loads with the module on, and the first version left the hero carousel in
+  place (see above). Not yet confirmed: that the emptied sections are gone and leave no gap.
 - Not captured: a product card (only `product/templates`), catalogue pages, search with ad incuts (the
   `launch` experiments mention advert and suggest incuts), the empty-search screen, a filled
   `api/media-adv/sdk` or `market_popup` reply, the prize wheel and live-stream screens.
@@ -1486,6 +1493,11 @@ preloads and two `onApply` pixels changed; «Реклама» 16 → 1 (the unus
 `an/rtbcount` 14 → 0, every product kept (32/32, 30/30; search 72/72, favourites 28/28); every rewritten
 `actionRaw` still parses; with every switch off, nothing changes; empty, non-JSON, `null` and wrong-shape
 bodies passed through; synthetic `media-adv/sdk` and `market_popup` bodies edited as described.
+
+Re-run 2026-11-20 with emptied sections, on that capture and a new one of the same build: hero and promo-strip
+sections present with `content: []`, every `shared.sections` key still matching a section, «Реклама» 15–16 → 1
+(the template), `an/rtbcount` → 0, organic products kept (32/32; 40 → 32 where the 8 removed were the
+`feedbox-media-adv-shelf` products).
 
 ### Market privacy
 

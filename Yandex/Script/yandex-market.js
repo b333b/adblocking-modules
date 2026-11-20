@@ -1,4 +1,4 @@
-// Last edited: 2026-11-19 20:45 MSK
+// Last edited: 2026-11-20 17:27 MSK
 /*
  * Yandex Market iOS app ("Beru"): ads and promo cleaner (Shadowrocket http-response script)
  *
@@ -6,13 +6,15 @@
  *   { ui: { sections: [ {id, origType, content: [ {id, type, divDataSharedId, actions} ],
  *                        tabsContent: [ {tabId, snippets: [ {type, snippet: {...}} ]} ] } ] },
  *     shared: { divData: { <id>: {log_id, states: [{state_id, div}]} }, sections, ... }, actions, ... }
- * Each section item points at its DivKit block in shared.divData. A block is neutered by
- * swapping its DivKit for an empty container and dropping the item's actions, so nothing
- * renders and no ad pixel fires; feed snippets are removed from their list.
+ * Each section item points at its DivKit block in shared.divData. An unwanted section keeps
+ * its place (other actions and triggers refer to it by id) but loses its items and their
+ * DivKit blocks, so there is nothing left to draw and no ad pixel fires; unwanted feed
+ * snippets are removed from their list the same way. (Until 2026-11-20 the items were kept
+ * with an empty DivKit block instead; on device the hero carousel still showed.)
  *
  * Routes (host mapi.market.yandex.net):
  *   /api/screen/*                       every screen (main, feed pages, cart, profile, ...)
- *   /api/media-adv/sdk                  urban-ads banner unit (search hero), every section neutered
+ *   /api/media-adv/sdk                  urban-ads banner unit (search hero), every section emptied
  *   /api/action/media-adv/market_popup  ad pop-up action, replaced by an empty action
  *
  * Every handler fails open: unexpected shape → original body ($done({})).
@@ -42,7 +44,7 @@ const on = (k) => (S ? !off(S[k]) : true);
 const AD_BANNERS = on("ad_banners");
 const AD_POPUPS = on("ad_popups");
 
-// Sections neutered whole, by origType (or, for the extra setting, also by section id).
+// Sections emptied whole, by origType (or, for the extra setting, also by section id).
 const SECTIONS_BY_SETTING = {
   promo_header: ["PromoHeaderRedesignSectionRenderData"],     // promo strip: prize draws, "coins for watching", live stream, 1 ₽ Plus offer, prize wheel
   fintech: ["FintechSectionRenderData"],                       // profile: Pay card, credit "до 997 000 ₽", Split and Plus offers
@@ -60,7 +62,9 @@ const AD_SECTION_RE = /MediaAdv|Madv|UrbanAds|SdkBanner|HeroCarousel/i;
 // Feed snippets (main-screen feed, its next pages, the feed under an empty cart).
 function feedSnippetUnwanted(id) {
   id = String(id || "");
-  if (AD_BANNERS && id.indexOf("feedbox-media-adv-banner") === 0) return true; // "Реклама" banner in the feed
+  // "Реклама" units in the feed: feedbox-media-adv-banner-* (banner), feedbox-media-adv-shelf-*
+  // (brand-paid product shelf, since Nov 2026), and any other feedbox-media-adv-* kind.
+  if (AD_BANNERS && id.indexOf("feedbox-media-adv") === 0) return true;
   if (on("review_nags") && id.indexOf("agitation_id") === 0) return true;      // "Как вам товар?" rating nag
   return false;
 }
@@ -83,23 +87,19 @@ function walk(o, fn) {
   }
 }
 
-function emptyDiv() {
-  return { type: "container", orientation: "vertical", height: { type: "wrap_content", min_size: { unit: "px", value: 1 } }, items: [] };
-}
-
 function divDataOf(body) {
   return body && isObj(body.shared) && isObj(body.shared.divData) ? body.shared.divData : null;
 }
 
-// Keep the item (id/type/layout) but render nothing and fire nothing.
-function neuterItem(c, body) {
-  if (!isObj(c)) return;
-  c.actions = {};
+// Empty a section: drop its items and their shared DivKit blocks. The section itself stays,
+// so shared.sections, sectionLabels and triggers that update it by id still find it.
+function emptySection(s, body) {
   const dd = divDataOf(body);
-  const key = c.divDataSharedId;
-  const empty = (old) => ({ log_id: (old && old.log_id) || c.id || "empty", states: [{ state_id: 0, div: emptyDiv() }] });
-  if (key != null && dd && dd[key]) dd[key] = empty(dd[key]);
-  else c.divData = empty(c.divData);
+  for (const c of s.content) {
+    const key = isObj(c) ? c.divDataSharedId : null;
+    if (dd && key != null) delete dd[key];
+  }
+  s.content = [];
 }
 
 // Drop actions of the given types from every action list, including lists encoded as JSON
@@ -182,10 +182,10 @@ function handleScreen(body) {
   let changed = false;
   for (const s of sections) {
     if (!isObj(s)) continue;
-    const neuter = (AD_BANNERS && sectionIsAd(s)) ||
+    const unwanted = (AD_BANNERS && sectionIsAd(s)) ||
       NEUTER_SECTIONS.has(String(s.origType || "")) || NEUTER_SECTIONS.has(String(s.id || ""));
-    if (neuter && Array.isArray(s.content) && s.content.length) {
-      s.content.forEach((c) => neuterItem(c, body));
+    if (unwanted && Array.isArray(s.content) && s.content.length) {
+      emptySection(s, body);
       changed = true;
       continue;
     }
@@ -206,7 +206,7 @@ function handleScreen(body) {
   return changed;
 }
 
-// Urban-ads unit (seen only as a preload target in this capture): neuter whatever sections it has.
+// Urban-ads unit (seen only as a preload target in this capture): empty whatever sections it has.
 function handleMediaAdvSdk(body) {
   if (!AD_BANNERS) return false;
   const sections = body && isObj(body.ui) && body.ui.sections;
@@ -214,7 +214,7 @@ function handleMediaAdvSdk(body) {
   let changed = false;
   for (const s of sections) {
     if (isObj(s) && Array.isArray(s.content) && s.content.length) {
-      s.content.forEach((c) => neuterItem(c, body));
+      emptySection(s, body);
       changed = true;
     }
   }
