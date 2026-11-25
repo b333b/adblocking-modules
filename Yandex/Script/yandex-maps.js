@@ -1,4 +1,4 @@
-// Last edited: 2026-11-25 03:41 MSK
+// Last edited: 2026-11-25 03:59 MSK
 // Yandex Maps: strip UI/ad experiment flags from mapkit2/config (protobuf, binary-body-mode=1)
 // and edit the JSON configs (startup, config, compliance, notifications...) (text mode).
 // Structure: top-level field 32 = experiments; its field 1 = one experiment;
@@ -33,7 +33,7 @@ const ON = {
   showcase:         true,  // "Рекомендации" sheet, its chip row, tabs, feed
   locationPrompt:   true,  // "Уточнить геолокацию"
   plus:             true,  // Plus icons in dock/menu/profile
-  ads:              true,  // ad pins, promo objects, banners, sponsored suggest
+  ads:              true,  // ad pins, promo objects, banners, sponsored suggest, "Свои Плюсы" banner in search results
   nags:             true,  // forced registration, rate-the-app
   taxiTab:          true,  // taxi tab on main screen
   bottomBar:        false, // no effect in 30.3.1: the big-icon bar is the built-in default
@@ -233,6 +233,46 @@ function categories(b, mainRow) {
   return new Uint8Array(out);
 }
 
+// ---- Search results (mapkit2/search/2.x/text, protobuf, ~1 MB) ----
+// Metadata entries are {1: key, 2: JSON string}. Removed keys:
+//   serp_offer/1.x  response-level banner above the results (2.1.36.1.1)
+//   card_offer/1.x  the same banner on every result's card (2.6.1.32.1.1)
+// Both carry "offer_advertisements" (e.g. "Больше кешбэка и выгоды в разделе «Свои Плюсы»", ORD-marked).
+// Only the paths below are rebuilt; everything else is copied byte-for-byte.
+const SEARCH_DROP_KEYS = /^(serp|card)_offer\//;
+function dropSearchMeta(b, f) { // true = remove this entry
+  for (const g of fields(b, f.dStart, f.dEnd)) if (g.num === 1 && g.type === 2) return SEARCH_DROP_KEYS.test(str(b, g.dStart, g.dEnd));
+  return false;
+}
+const SEARCH_SPEC = { 2: { 1: { 36: { 1: { 1: dropSearchMeta } } }, 6: { 1: { 32: { 1: { 1: dropSearchMeta } } } } } };
+// Returns {parts, len, changed}; parts are subarrays of b or small header arrays.
+function prune(b, from, to, spec) {
+  const parts = []; let len = 0, changed = false;
+  for (const f of fields(b, from, to)) {
+    const rule = f.type === 2 && spec[f.num];
+    if (typeof rule === "function") {
+      if (rule(b, f)) { changed = true; continue; }
+    } else if (rule) {
+      const r = prune(b, f.dStart, f.dEnd, rule);
+      if (r.changed) {
+        const head = new Uint8Array(writeVarint(f.num * 8 + 2).concat(writeVarint(r.len)));
+        parts.push(head); len += head.length;
+        for (const p of r.parts) parts.push(p);
+        len += r.len; changed = true; continue;
+      }
+    }
+    parts.push(b.subarray(f.start, f.end)); len += f.end - f.start;
+  }
+  return { parts, len, changed };
+}
+function searchResults(b) { // returns null when nothing was removed
+  const r = prune(b, 0, b.length, SEARCH_SPEC);
+  if (!r.changed) return null;
+  const out = new Uint8Array(r.len); let o = 0;
+  for (const p of r.parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
 function stripFeed(b) { // drop top-level field 1 (the place cards), keep everything else
   let out = [];
   for (const f of fields(b, 0, b.length)) if (f.num !== 1) out = out.concat(slice(b, f.start, f.end));
@@ -248,6 +288,13 @@ function stripFeed(b) { // drop top-level field 1 (the place cards), keep everyt
       if (src instanceof ArrayBuffer) src = new Uint8Array(src);
       if (!src || typeof src === "string" || (src.length > 1 && src[0] === 0x1f && src[1] === 0x8b)) { $done({}); return; }
       $done({ body: categories(src, /maps_platform=mobile_maps_search(&|$)/.test(url)) });
+    } else if (/\/mapkit2\/search\/2\.x\/text/.test(url)) {
+      if (!ON.ads) { $done({}); return; }
+      let src = $response.bodyBytes || $response.body;
+      if (src instanceof ArrayBuffer) src = new Uint8Array(src);
+      if (!src || !src.length || typeof src === "string" || (src[0] === 0x1f && src[1] === 0x8b)) { $done({}); return; }
+      const out = searchResults(src);
+      $done(out ? { body: out } : {});
     } else if (/\/v1\/search\/discovery/.test(url)) {
       if (FEED_MODE === "status404") { $done({ status: 404, headers: { "Content-Type": "text/plain" }, body: "" }); return; }
       if (FEED_MODE === "status204") { $done({ status: 204, headers: { "Content-Type": "text/plain" }, body: "" }); return; }
@@ -274,4 +321,4 @@ function stripFeed(b) { // drop top-level field 1 (the place cards), keep everyt
   }
 })();
 
-if (typeof module !== "undefined") module.exports = { rewrite, editJSON, stripFeed, categories, DROP, SET, ON };
+if (typeof module !== "undefined") module.exports = { rewrite, editJSON, stripFeed, categories, searchResults, DROP, SET, ON };

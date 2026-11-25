@@ -923,7 +923,7 @@ flags and JSON configs).
   - [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule): rules, rewrites, header edits, script wiring, MITM hosts.
   - [`Yandex/Script/yandex-maps.js`](Yandex/Script/yandex-maps.js): one script used by two `[Script]` entries:
     - `yandex-maps`: `binary-body-mode=1`, protobuf endpoints (MapKit config,
-      discovery feed, category lists);
+      discovery feed, category lists, search results);
     - `yandex-maps-json`: text mode, JSON configs.
     The script dispatches on `$request.url`.
 - Shadowrocket caches scripts fetched by URL: after pushing a script change, the
@@ -1047,19 +1047,28 @@ Other flags the script drops: `hints_in_search_bar_timeout`, `two_alice_main_scr
 | Other startup promo | `maps-search-results-banners`, `maps-adverts-on-map-3d`, `profile-menu-icons` (`minusovik`, `plusovik`, `svoi_plusi`, `russpass_summer`) | emptied / filtered |
 | Chain ads in navigation | `v1/config` → `ad_chains` | emptied |
 | Navigation audio ads | `mobile-maps-common.s3.yandex.net/v1/audio_ads/` | `reject` |
+| «Больше кешбэка и выгоды в разделе "Свои Плюсы"» banner in search results and on result cards | `mapkit2/search/2.x/text`, metadata `serp_offer/1.x`, `card_offer/1.x` | script drops those entries (since 2026-11-25) |
 | Ad counters / trackers | `yandex.ru/an/`, `yandex.ru/clck/`, `verify.yandex.ru`, `mc.yandex.ru`, `report.appmetrica.yandex.net`, `appsflyersdk.com` (all subdomains), `app-analytics-services.com`, `crashlyticsreports-pa.googleapis.com`, `firebaselogging-pa.googleapis.com` | rejected |
 
 Not touched on purpose: insurance banners (`guidance-insurance-banner`, `care-*` in startup),
-because removing whole startup sections risks breaking app launch; ads mixed into normal
-search results (same response as real results).
+because removing whole startup sections risks breaking app launch; ad data attached to paid
+organisations in normal search results (see below).
 
-Candidate if search-result ads matter: `mapkit2/search/2.x/text` (protobuf, ~1 MB uncompressed
-for one category search, not scripted). Paid organisations are real results with ad data
-attached: per result (`2.6`), a Direct block at `1.21.18` (`directBannerId`, `directPixelShowUrl`,
-`directPixelClickUrl`, advertiser links with `yclid` / `erid`) and JSON strings at `1.32.1.1.2`
-with `has_active_advert`, `promo_action` and `offer_advertisements`. Stripping those would need a
-new binary script entry for `search/2.x/text` plus `Accept-Encoding` removal on a very large
-response; not done.
+Search results, `mapkit2/search/2.x/text` (protobuf, ~1 MB uncompressed for one category
+search), scripted since 2026-11-25 (`searchResults()`, `yandex-maps` binary entry, `Accept-Encoding`
+removed). The «Больше кешбэка и выгоды в разделе "Свои Плюсы"» banner (`advertisement_id`
+`benefits_centre`, ORD-marked, opens `yandex.ru/maps-promo/benefits`) comes as metadata entries
+`{1: key, 2: JSON string}` with key `serp_offer/1.x` (response level, `2.1.36.1.1`, the banner above
+the list) and `card_offer/1.x` (on each result's card, `2.6.1.32.1.1`, twice per result). The script
+drops those two keys at those paths only and copies everything else byte-for-byte; follows `ON.ads`.
+On the 31.8.0 capture: 37 entries removed (1 + 36 on 18 results), 1067425 → 999712 bytes, all 18
+results and every other metadata entry (`business_filter`, `tycoon_promo_actions`, `city_chains`,
+`photos`, `discovery`, …) unchanged.
+
+Still left in search results: paid organisations are real results with ad data attached: a Direct
+block at `2.6.1.21.18` (`directBannerId`, `directPixelShowUrl`, `directPixelClickUrl`, advertiser
+links with `yclid` / `erid`) and `tycoon_promo_actions/1.x` (`has_active_advert`, `promo_action`).
+Candidates if those show as ads; not done.
 
 ### Maps open issues
 
@@ -1088,7 +1097,7 @@ response; not done.
   often gzipped.
 - Decode protobuf with a raw decoder (no `.proto` files); strings are readable.
 - Test script changes in Node against captured bodies before shipping (the script exports
-  `rewrite`, `editJSON`, `stripFeed`, `categories` when `module` exists). Don't commit the test data.
+  `rewrite`, `editJSON`, `stripFeed`, `categories`, `searchResults` when `module` exists). Don't commit the test data.
 
 ---
 
