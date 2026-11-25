@@ -1,4 +1,4 @@
-// Last edited: 2026-09-29 20:37 MSK
+// Last edited: 2026-11-25 03:41 MSK
 // Yandex Maps: strip UI/ad experiment flags from mapkit2/config (protobuf, binary-body-mode=1)
 // and edit the JSON configs (startup, config, compliance, notifications...) (text mode).
 // Structure: top-level field 32 = experiments; its field 1 = one experiment;
@@ -44,7 +44,7 @@ const ON = {
 const GROUPS = {
   addHome: ["suggest_add_home"],
   whereTo: ["removing_search_bar"],
-  ai: ["ai_search_agent", "ai_search_agent_map", "experimental_webview_aiAssistantOnboarding"],
+  ai: ["ai_search_agent", "ai_search_agent_map"],
   searchBarExtras: ["two_alice_main_screen", "hints_in_search_bar_timeout", "use_personalized_poi_context"],
   showcase: ["discovery_shutter_title", "discovery_feed_map_enabled"],
   locationPrompt: ["pin_user_location", "pin_user_location_ttl", "pin_user_location_skip_sheet"],
@@ -58,7 +58,7 @@ const GROUPS = {
     "one_ad_for_premium_pin", "pedestrian_banner_ad", "new_design_toponym", "serp_banner_redesign",
     "experimental_agent_promo", "experimental_promo_by_context", "experimental_promo_context_pos",
     "experimental_promo_prefix_pos", "experimental_promo_tags", "trx_care_config", "scooters_route_screen_promo"],
-  nags: ["force_registration_frequency", "force_registration_intro_frequency", "rate_me_percentage"],
+  nags: ["force_registration_frequency", "force_registration_intro_frequency", "rate_me_percentage", "rate_route", "rate_route_count", "rate_route_random", "rate_route_timeout"],
   taxiTab: ["taxi_tab_on_main_screen"]
 };
 

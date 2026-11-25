@@ -64,7 +64,7 @@ Shadowrocket CA trusted). [README.md](README.md) lists every module's raw URL as
 | Ozon Bank | — | from scratch | working |
 | Ozon Marketplace | build 1050 (capture, November 2026) | from scratch | working again since 2026-10-31 (it had stopped: `api.ozon.ru` fails Shadowrocket's certificate check, see [hosts not to decrypt](#ozon-hosts-that-must-not-be-decrypted)) |
 | Ozon MITM exclusions | — | from scratch | working |
-| Yandex Maps | 31.1.5 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
+| Yandex Maps | 31.8.0 (capture, November 2026) | from scratch | working, see [open issues](#maps-open-issues) |
 | Yandex Eats | 26.43.0 (capture, November 2026) | from scratch | new, not yet confirmed on device, see [open items](#eats-open-items) |
 | Yandex Market | 2026.46.2 (captures, November 2026) | from scratch | third version 2026-11-20 (the second stopped the app from starting), not yet confirmed on device, see [open items](#market-open-items) |
 | Yandex Go | build 508055 (capture, November 2026) | from scratch | working, see [open items](#go-open-items) |
@@ -194,9 +194,10 @@ Rules and rewrites apply globally whenever a module is enabled, not only to its 
 | `report.appmetrica.yandex.net` | `DOMAIN` REJECT | | `DOMAIN` REJECT | | `DOMAIN` REJECT |  |
 | `mc.yandex.ru` | | `DOMAIN-SUFFIX` in rule set | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` REJECT |  |  |
 | `tracker-api.vk-analytics.ru` (MyTracker) | `DOMAIN-SUFFIX` REJECT | `DOMAIN-SUFFIX` in rule set | | |  |  |
-| `app-analytics-services.com` | `DOMAIN` REJECT | | | `DOMAIN-SUFFIX` REJECT |  |  |
-| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
-| `crashlyticsreports-pa.googleapis.com` (Crashlytics crash reports, any app) | `DOMAIN` REJECT | | | |  |  |
+| `app-analytics-services.com` | `DOMAIN` REJECT | | `DOMAIN` REJECT | `DOMAIN-SUFFIX` REJECT |  |  |
+| `analytics.adjust.com`, `firebaselogging-pa.googleapis.com` | `DOMAIN` REJECT | | `firebaselogging-pa.googleapis.com` only, `DOMAIN` REJECT | `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT | `analytics.adjust.com` only, `DOMAIN` REJECT |
+| `crashlyticsreports-pa.googleapis.com` (Crashlytics crash reports, any app) | `DOMAIN` REJECT | | `DOMAIN` REJECT | |  |  |
+| `appsflyersdk.com` (AppsFlyer, every subdomain) | | | `DOMAIN-SUFFIX` REJECT | |  |  |
 | `wcm.weborama-tech.ru` | `DOMAIN-SUFFIX,weborama-tech.ru` REJECT | | | `DOMAIN` REJECT | `DOMAIN` REJECT |  |
 | `api.inappstory.ru` in MITM | | yes (script edits only requests from `lk.megafon.ru`) | | |  |  |
 | `media-adv.market.yandex.ru`, `em.market.ya.ru`, `em.market.yandex.ru`, `log.strm.yandex.ru` | | | | `DOMAIN` REJECT | `DOMAIN` REJECT | `DOMAIN` REJECT |
@@ -915,7 +916,8 @@ flags and JSON configs).
 
 ### Maps target
 
-- App: Yandex Maps for iOS, bundle `ru.yandex.traffic`, last tested on **30.3.1**.
+- App: Yandex Maps for iOS, bundle `ru.yandex.traffic`, last tested on device on **30.3.1**,
+  last checked against a capture on **31.8.0**.
 - Client: Shadowrocket (modules, `[URL Rewrite]`, `[Header Rewrite]`, `[Script]`, MITM).
 - Files:
   - [`Yandex/yandex-maps.sgmodule`](Yandex/yandex-maps.sgmodule): rules, rewrites, header edits, script wiring, MITM hosts.
@@ -933,6 +935,26 @@ flags and JSON configs).
   prompt), `hints_set_in_search_bar` (`ai_agent`), `poi_ads_auction_config` (ad pin auction),
   `experimental_exp_pay_offers`, and `MAPS_RENDERER ads = enabled` (ads in map tiles; untested,
   and tile requests must never be redirected).
+- Re-checked 2026-11-25 on **31.8.0** (ProxyPin, warm launch: main screen, showcase, one category
+  search). Same endpoints and shapes; every scripted response still edited (MapKit config, both
+  showcase feeds, all three chip lists); the `mobile_maps_search` list carried 4 sponsored chips
+  in field 4 (type `advert`, `cpm_icons`, icons from `get-geoadv-ext`), all removed. Changes:
+  - `rate_route`, `rate_route_count`, `rate_route_random`, `rate_route_timeout` (rate-the-route
+    prompt after a trip) now dropped with the `nags` group.
+  - `experimental_webview_aiAssistantOnboarding` is gone from the config; removed from `GROUPS.ai`.
+  - New rules for SDK telemetry the app sends directly: `app-analytics-services.com` (Firebase
+    Analytics, config + `/a` events), `crashlyticsreports-pa.googleapis.com`,
+    `firebaselogging-pa.googleapis.com`. AppsFlyer now uses a per-app prefix
+    (`<id>.launches|inapps|skadsdkless|cdn-settings.appsflyersdk.com`), already covered by
+    `DOMAIN-SUFFIX,appsflyersdk.com`.
+  - Not changed: `firebase-settings.crashlytics.com` (settings only; Crashlytics reports are
+    blocked), `api.browser.yandex.ru/uma_proto` (shared Yandex host),
+    `mobileproxy.passport.yandex.net` (login, incl. `checkvpn`).
+  - `mobile-maps-common.s3.yandex.net/v1/adv/wi_fi_hotspot/` is **not** an ad despite the path: it
+    is the icon of the real «Точки Wi-Fi» chip (`OFFLINE_wifi_spots_menu_item`). Don't block `v1/adv/`.
+  - New endpoints, left alone: `v1/help_nearby/api/launch` (menu button «Помогать с Яндексом»,
+    donations; compliance `show_help_nearby` already hides it), `v1/platform_bdui/intro`
+    (`{"content":null}`), `v2/weather/forecast`, `v1/taxi/nearest_zone`.
 - Test changes to the app with: force-quit, launch twice. Some changes only show
   after a delete + reinstall (see [Caching](#maps-caching)).
 
@@ -1003,14 +1025,15 @@ Removing a flag = the app's **built-in default**, which is sometimes "on". Confi
 Other flags the script drops: `hints_in_search_bar_timeout`, `two_alice_main_screen`,
 `pin_user_location*` (contains `clarify_location_screen` = «Уточнить геолокацию»),
 `ads_promo_object_*`, about 30 `ad_*`/`advert*` flags, `experimental_promo_*` (suggest), `trx_care_config`
-(insurance), `force_registration_*`, `rate_me_percentage`, `taxi_tab_on_main_screen`.
+(insurance), `force_registration_*`, `rate_me_percentage`, `rate_route*` (since 2026-11-25),
+`taxi_tab_on_main_screen`.
 
 ### Maps endpoint map
 
 | UI element | Source | Handling |
 |---|---|---|
 | Promo objects fixed on screen (cars, animals) | `mapkit2/search/2.x/banner/promo_object`, images `avatars.mds.yandex.net/get-geoadv-ext/` | `reject-200`, `reject-img` ✅ |
-| Ad pins | `mapkit2/search/2.x/poi/direct_ads`, events `.../events/advert` | `reject-200` ✅ |
+| Ad pins | `mapkit2/search/2.x/poi/direct_ads`, events `.../events/advert` | `reject-200` ✅ (31.8.0: the same response also carries the photo/rubric "discovery" pins, `source: discovery`, next to paid ones, `source: auction` with `yclid`/`banner_id`; the whole response is rejected) |
 | Photo POIs "for discovery" | `mapkit2/layers/2.x/personalized_poi_v3/` | `reject-200` |
 | «Уточнить геолокацию» | `mapkit2/coverage/2.x/locjam`, `locspoof` (jamming/spoofing zones) + flag `pin_user_location` | `reject-200` + flag drop |
 | Search bar hints («Рестораны с видом»...) | startup `maps-search-hints`, `maps-search-hints-v2` + flag `hints_in_search_bar_timeout` | lists emptied + flag drop ✅ |
@@ -1024,11 +1047,19 @@ Other flags the script drops: `hints_in_search_bar_timeout`, `two_alice_main_scr
 | Other startup promo | `maps-search-results-banners`, `maps-adverts-on-map-3d`, `profile-menu-icons` (`minusovik`, `plusovik`, `svoi_plusi`, `russpass_summer`) | emptied / filtered |
 | Chain ads in navigation | `v1/config` → `ad_chains` | emptied |
 | Navigation audio ads | `mobile-maps-common.s3.yandex.net/v1/audio_ads/` | `reject` |
-| Ad counters / trackers | `yandex.ru/an/`, `yandex.ru/clck/`, `verify.yandex.ru`, `mc.yandex.ru`, `report.appmetrica.yandex.net`, `appsflyersdk.com` | rejected |
+| Ad counters / trackers | `yandex.ru/an/`, `yandex.ru/clck/`, `verify.yandex.ru`, `mc.yandex.ru`, `report.appmetrica.yandex.net`, `appsflyersdk.com` (all subdomains), `app-analytics-services.com`, `crashlyticsreports-pa.googleapis.com`, `firebaselogging-pa.googleapis.com` | rejected |
 
 Not touched on purpose: insurance banners (`guidance-insurance-banner`, `care-*` in startup),
 because removing whole startup sections risks breaking app launch; ads mixed into normal
 search results (same response as real results).
+
+Candidate if search-result ads matter: `mapkit2/search/2.x/text` (protobuf, ~1 MB uncompressed
+for one category search, not scripted). Paid organisations are real results with ad data
+attached: per result (`2.6`), a Direct block at `1.21.18` (`directBannerId`, `directPixelShowUrl`,
+`directPixelClickUrl`, advertiser links with `yclid` / `erid`) and JSON strings at `1.32.1.1.2`
+with `has_active_advert`, `promo_action` and `offer_advertisements`. Stripping those would need a
+new binary script entry for `search/2.x/text` plus `Accept-Encoding` removal on a very large
+response; not done.
 
 ### Maps open issues
 

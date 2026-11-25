@@ -2,11 +2,14 @@
 #!desc=Removes promo objects, ad pins, suggestions, search hints, showcase, Plus, and prompt/ad trackers
 #!category=AdBlock
 #!homepage=https://github.com/b333b/adblocking-modules
-#!date=2026-10-14 05:06 MSK
+#!date=2026-11-25 03:41 MSK
 
 [Rule]
 # Not MITM'd, so blocked by domain
+DOMAIN,app-analytics-services.com,REJECT
 DOMAIN-SUFFIX,appsflyersdk.com,REJECT
+DOMAIN,crashlyticsreports-pa.googleapis.com,REJECT
+DOMAIN,firebaselogging-pa.googleapis.com,REJECT
 DOMAIN-SUFFIX,mc.yandex.ru,REJECT
 DOMAIN,verify.yandex.ru,REJECT
 DOMAIN,report.appmetrica.yandex.net,REJECT
